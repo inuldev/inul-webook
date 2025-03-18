@@ -1,3 +1,5 @@
+import { ThemeProvider } from "next-themes";
+
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -13,8 +15,8 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "Inulweb",
-  description: "Making a web app with Next.js",
+  title: "inbook",
+  description: "inbook is a web app like facebook",
 };
 
 export default function RootLayout({ children }) {
@@ -23,7 +25,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ThemeProvider attribute="class">{children}</ThemeProvider>
       </body>
     </html>
   );
