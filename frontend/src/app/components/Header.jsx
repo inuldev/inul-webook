@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import React, { useRef, useState } from "react";
 import {
   Search,
   Home,
@@ -16,6 +16,8 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
+
+import useSidebarStore from "@/store/sidebarStore";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,7 @@ import {
 
 const Header = () => {
   const router = useRouter();
+  const { toggleSidebar } = useSidebarStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const { theme, setTheme } = useTheme();
@@ -105,6 +108,7 @@ const Header = () => {
             variant="ghost"
             size="icon"
             className="md:hidden text-gray-600 cursor-pointer"
+            onClick={toggleSidebar}
           >
             <Menu />
           </Button>

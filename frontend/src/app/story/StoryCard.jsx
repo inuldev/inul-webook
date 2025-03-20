@@ -64,7 +64,7 @@ const StoryCard = ({ isAddStory, story }) => {
                 </Avatar>
               </div>
               <div className="absolute bottom-2 left-2 right-2">
-                <p className="text-white text-xs font-semibold truncate">
+                <p className="dark:text-white text-xs font-semibold truncate">
                   Inul Dev
                 </p>
               </div>

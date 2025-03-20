@@ -11,14 +11,22 @@ import {
   LogOut,
 } from "lucide-react";
 
+import useSidebarStore from "@/store/sidebarStore";
+
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const LeftSideBar = () => {
+  const { isSidebarOpen, toggleSidebar } = useSidebarStore();
+
   return (
     <aside
-      className={`fixed top-16 left-0 h-full w-64 p-4 transform transition-transform duration-200 ease-in-out md:translate-x-0 flex flex-col z-50 md:z-0`}
+      className={`fixed top-16 left-0 h-full w-64 p-4 transform transition-transform duration-200 ease-in-out md:translate-x-0 flex flex-col z-50 md:z-0 ${
+        isSidebarOpen
+          ? "translate-x-0 bg-white dark:bg-[rgb(36,37,38)] shadow-lg"
+          : "-translate-x-full"
+      } ${isSidebarOpen ? "md:hidden" : ""} md:bg-transparent md:shadow-none`}
     >
       <div className="flex flex-col h-full overflow-y-auto">
         <nav className="space-y-4 flex-grow">
