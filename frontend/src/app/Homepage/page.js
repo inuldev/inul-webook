@@ -15,7 +15,8 @@ const HomePage = () => {
     {
       _id: 1,
       content: "This is a sample post.",
-      mediaUrl: "http://localhost",
+      mediaUrl:
+        "https://images.pexels.com/photos/13003306/pexels-photo-13003306.jpeg?auto=compress&cs=tinysrgb&w=600&lazy=load",
       mediaType: "image",
     },
   ];
