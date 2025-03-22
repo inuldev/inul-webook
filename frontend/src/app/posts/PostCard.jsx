@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MoreHorizontal, ThumbsUp, MessageCircle, Share2 } from "lucide-react";
@@ -89,14 +91,14 @@ const PostCard = ({ post }) => {
           )}
           <div className="flex justify-between items-center mb-4">
             <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
-              5 likes
+              3 likes
             </span>
             <div className="flex gap-3">
               <span
                 className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer"
                 onClick={() => setShowComments(!showComments)}
               >
-                2 comments
+                3 comments
               </span>
               <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
                 1 share

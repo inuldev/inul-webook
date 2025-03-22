@@ -18,6 +18,35 @@ const HomePage = () => {
       mediaUrl:
         "https://images.pexels.com/photos/13003306/pexels-photo-13003306.jpeg?auto=compress&cs=tinysrgb&w=600&lazy=load",
       mediaType: "image",
+      comments: [
+        {
+          _id: 1,
+          user: {
+            _id: 1,
+            text: "This is a sample comment.",
+            username: "johndoe",
+            createdAt: "22-03-2025",
+          },
+        },
+        {
+          _id: 2,
+          user: {
+            _id: 2,
+            text: "This is another sample comment.",
+            username: "janedoe",
+            createdAt: "22-03-2025",
+          },
+        },
+        {
+          _id: 3,
+          user: {
+            _id: 3,
+            text: "This is yet another sample comment.",
+            username: "janedoe",
+            createdAt: "22-03-2025",
+          },
+        },
+      ],
     },
   ];
 
@@ -34,7 +63,7 @@ const HomePage = () => {
             />
             <div className="mt-6 space-y-6 mb-4">
               {posts.map((post) => (
-                <PostCard key={post._id} post={post} />
+                <PostCard key={post?._id} post={post} />
               ))}
             </div>
           </div>

@@ -17,6 +17,7 @@ import {
   Sun,
 } from "lucide-react";
 
+import userStore from "@/store/userStore";
 import useSidebarStore from "@/store/sidebarStore";
 
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
 
 const Header = () => {
   const router = useRouter();
+  const { user, clearUser } = userStore();
   const { toggleSidebar } = useSidebarStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
@@ -159,7 +161,10 @@ const Header = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => handleNavigation(`/user-profile/${user?._id}`)}
+              >
                 <Users />
                 <span className="ml-2">Profile</span>
               </DropdownMenuItem>
@@ -184,7 +189,7 @@ const Header = () => {
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem className="cursor-pointer" onClick={clearUser}>
                 <LogOut />
                 <span className="ml-2">Logout</span>
               </DropdownMenuItem>

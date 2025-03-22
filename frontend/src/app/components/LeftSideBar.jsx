@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import {
   Home,
   Users,
@@ -11,6 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 
+import userStore from "@/store/userStore";
 import useSidebarStore from "@/store/sidebarStore";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,16 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const LeftSideBar = () => {
+  const router = useRouter();
+  const { user, clearUser } = userStore();
   const { isSidebarOpen, toggleSidebar } = useSidebarStore();
+
+  const handleNavigation = (path) => {
+    router.push(path);
+    if (isSidebarOpen) {
+      toggleSidebar();
+    }
+  };
 
   return (
     <aside
@@ -30,26 +41,45 @@ const LeftSideBar = () => {
     >
       <div className="flex flex-col h-full overflow-y-auto">
         <nav className="space-y-4 flex-grow">
-          <div className="flex items-center space-x-2 cursor-pointer">
+          <div
+            className="flex items-center space-x-2 cursor-pointer"
+            onClick={() => handleNavigation("/")}
+          >
             <Avatar className="h-10 w-10">
               <AvatarImage />
               <AvatarFallback className="dark:bg-gray-400">ID</AvatarFallback>
             </Avatar>
             <span className="font-semibold">Inul Dev</span>
           </div>
-          <Button variant="ghost" className="full justify-start">
+          <Button
+            variant="ghost"
+            className="full justify-start"
+            onClick={() => handleNavigation("/")}
+          >
             <Home className="mr-4" />
             Home Page
           </Button>
-          <Button variant="ghost" className="full justify-start">
+          <Button
+            variant="ghost"
+            className="full justify-start"
+            onClick={() => handleNavigation("/friends-list", "friends")}
+          >
             <Users className="mr-4" />
             Friends List
           </Button>
-          <Button variant="ghost" className="full justify-start">
+          <Button
+            variant="ghost"
+            className="full justify-start"
+            onClick={() => handleNavigation("/video-feed", "video")}
+          >
             <Video className="mr-4" />
             Video Feed
           </Button>
-          <Button variant="ghost" className="full justify-start">
+          <Button
+            variant="ghost"
+            className="full justify-start"
+            onClick={() => handleNavigation(`/user-profile/${user?._id}`)}
+          >
             <User className="mr-4" />
             Profile
           </Button>
