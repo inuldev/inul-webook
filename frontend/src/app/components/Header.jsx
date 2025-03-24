@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import React, { useState } from "react";
+import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Search,
   Home,
@@ -17,8 +18,10 @@ import {
   Sun,
 } from "lucide-react";
 
+import Loader from "@/lib/Loader";
 import userStore from "@/store/userStore";
 import useSidebarStore from "@/store/sidebarStore";
+import { getAllUsers, logout } from "@/service/auth.service";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,16 +37,102 @@ import {
 
 const Header = () => {
   const router = useRouter();
+  const searchRef = useRef(null);
+  const { theme, setTheme } = useTheme();
   const { user, clearUser } = userStore();
   const { toggleSidebar } = useSidebarStore();
+  const [userList, setUserList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [filterUsers, setFilterUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("home");
-  const { theme, setTheme } = useTheme();
+
+  const userPlaceholder = user?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
 
   const handleNavigation = (path, item) => {
     router.push(path);
     setActiveTab(item);
   };
+
+  const handleLogout = async () => {
+    try {
+      const result = await logout();
+      if (result?.status == "success") {
+        router.push("/user-login");
+        clearUser();
+      }
+      toast.success("user logged out successfully");
+    } catch (error) {
+      console.log(error);
+      toast.error("failed to log out");
+    }
+  };
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const result = await getAllUsers();
+        setUserList(result);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery) {
+      const filterUser = userList.filter((user) => {
+        return user.username.toLowerCase().includes(searchQuery.toLowerCase());
+      });
+      setFilterUsers(filterUser);
+      setIsSearchOpen(true);
+    } else {
+      setFilterUsers([]);
+      setIsSearchOpen(false);
+    }
+  }, [searchQuery, userList]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setIsSearchOpen(false);
+  };
+
+  const handleUserClick = async (userId) => {
+    try {
+      setLoading(true);
+      setIsSearchOpen(false);
+      setSearchQuery("");
+      router.push(`user-profile/${userId}`);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchClose = (e) => {
+    if (!searchRef.current?.contains(e.target)) {
+      setIsSearchOpen(false);
+    }
+  };
+  useEffect(() => {
+    document.addEventListener("click", handleSearchClose);
+    return () => {
+      document.removeEventListener("click", handleSearchClose);
+    };
+  });
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <header className="bg-white dark:bg-[rgb(36,37,38)] text-foreground shadow-md h-16 fixed top-0 left-0 right-0 z-50 p-2">
@@ -57,28 +146,51 @@ const Header = () => {
             onClick={() => handleNavigation("/")}
             className="cursor-pointer"
           />
-          <div className="relative">
-            <form>
+          <div className="relative" ref={searchRef}>
+            <form onSubmit={handleSearchSubmit}>
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input
                   className="pl-8 w-40 md:w-64 h-10 bg-gray-100 dark:bg-[rgb(58,59,60)] rounded-full"
                   placeholder="search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchOpen(true)}
                 />
               </div>
               {isSearchOpen && (
                 <div className="absolute top-full left-0 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg mt-1 z-50">
                   <div className="p-2">
-                    <div className="flex items-center space-x-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer">
-                      <Search className="absolute text-sm text-gray-400" />
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage />
-                          <AvatarFallback>ID</AvatarFallback>
-                        </Avatar>
-                        <span>Inul Dev</span>
-                      </div>
-                    </div>
+                    {filterUsers.length > 0 ? (
+                      filterUsers.map((user) => (
+                        <div
+                          className="flex items-center space-x-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
+                          key={user._id}
+                          onClick={() => handleUserClick(user?._id)}
+                        >
+                          <Search className="absolute text-sm text-gray-400" />
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              {user?.profilePicture ? (
+                                <AvatarImage
+                                  src={user?.profilePicture}
+                                  alt={user?.username}
+                                />
+                              ) : (
+                                <AvatarFallback>
+                                  {userPlaceholder}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <span>{user?.username}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="p-2 text-gray-500">No user Found</div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -132,10 +244,16 @@ const Header = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8 mr-2">
-                  <AvatarImage />
-                  <AvatarFallback className="dark:bg-gray-400">
-                    ID
-                  </AvatarFallback>
+                  {user?.profilePicture ? (
+                    <AvatarImage
+                      src={user?.profilePicture}
+                      alt={user?.username}
+                    />
+                  ) : (
+                    <AvatarFallback className="dark:bg-gray-400">
+                      {userPlaceholder}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -144,17 +262,23 @@ const Header = () => {
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center">
                     <Avatar className="h-8 w-8 mr-2">
-                      <AvatarImage />
-                      <AvatarFallback className="dark:bg-gray-400">
-                        ID
-                      </AvatarFallback>
+                      {user?.profilePicture ? (
+                        <AvatarImage
+                          src={user?.profilePicture}
+                          alt={user?.username}
+                        />
+                      ) : (
+                        <AvatarFallback className="dark:bg-gray-400">
+                          {userPlaceholder}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="">
                       <p className="text-sm font-medium leading-none">
-                        Inul Dev
+                        {user?.username}
                       </p>
                       <p className="text-xs mt-2 text-gray-600 leading-none">
-                        inuldev@gmail.com
+                        {user?.email}
                       </p>
                     </div>
                   </div>
@@ -189,7 +313,10 @@ const Header = () => {
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={clearUser}>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={handleLogout}
+              >
                 <LogOut />
                 <span className="ml-2">Logout</span>
               </DropdownMenuItem>

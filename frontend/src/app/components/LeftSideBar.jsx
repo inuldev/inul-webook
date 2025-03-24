@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import {
   Home,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 import userStore from "@/store/userStore";
+import { logout } from "@/service/auth.service";
 import useSidebarStore from "@/store/sidebarStore";
 
 import { Button } from "@/components/ui/button";
@@ -24,10 +26,29 @@ const LeftSideBar = () => {
   const { user, clearUser } = userStore();
   const { isSidebarOpen, toggleSidebar } = useSidebarStore();
 
+  const userPlaceholder = user?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
+
   const handleNavigation = (path) => {
     router.push(path);
     if (isSidebarOpen) {
       toggleSidebar();
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const result = await logout();
+      if (result?.status == "success") {
+        router.push("/user-login");
+        clearUser();
+      }
+      toast.success("user logged out successfully");
+    } catch (error) {
+      console.log(error);
+      toast.error("failed to log out");
     }
   };
 
@@ -46,10 +67,15 @@ const LeftSideBar = () => {
             onClick={() => handleNavigation("/")}
           >
             <Avatar className="h-10 w-10">
-              <AvatarImage />
-              <AvatarFallback className="dark:bg-gray-400">ID</AvatarFallback>
+              {user?.profilePicture ? (
+                <AvatarImage src={user?.profilePicture} alt={user?.username} />
+              ) : (
+                <AvatarFallback className="dark:bg-gray-400">
+                  {userPlaceholder}
+                </AvatarFallback>
+              )}
             </Avatar>
-            <span className="font-semibold">Inul Dev</span>
+            <span className="font-semibold">{user?.username}</span>
           </div>
           <Button
             variant="ghost"
@@ -98,13 +124,22 @@ const LeftSideBar = () => {
           <Separator className="my-4" />
           <div className="flex items-center space-x-2 mb-4 cursor-pointer">
             <Avatar className="h-10 w-10">
-              <AvatarImage />
-              <AvatarFallback className="dark:bg-gray-400">ID</AvatarFallback>
+              {user?.profilePicture ? (
+                <AvatarImage src={user?.profilePicture} alt={user?.username} />
+              ) : (
+                <AvatarFallback className="dark:bg-gray-400">
+                  {userPlaceholder}
+                </AvatarFallback>
+              )}
             </Avatar>
-            <span className="font-semibold">Inul Dev</span>
+            <span className="font-semibold">{user?.username}</span>
           </div>
           <div className="text-xs text-muted-foreground space-y-1">
-            <Button variant="ghost" className="cursor-pointer -ml-4">
+            <Button
+              variant="ghost"
+              className="cursor-pointer -ml-4"
+              onClick={handleLogout}
+            >
               <LogOut />
               <span className="ml-2 font-bold text-md">Logout</span>
             </Button>
