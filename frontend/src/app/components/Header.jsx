@@ -20,8 +20,9 @@ import {
 
 import Loader from "@/lib/Loader";
 import userStore from "@/store/userStore";
+import { logout } from "@/service/auth.service";
 import useSidebarStore from "@/store/sidebarStore";
-import { getAllUsers, logout } from "@/service/auth.service";
+import { getAllUsers } from "@/service/user.service";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -123,6 +124,7 @@ const Header = () => {
       setIsSearchOpen(false);
     }
   };
+
   useEffect(() => {
     document.addEventListener("click", handleSearchClose);
     return () => {
@@ -162,30 +164,38 @@ const Header = () => {
                 <div className="absolute top-full left-0 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg mt-1 z-50">
                   <div className="p-2">
                     {filterUsers.length > 0 ? (
-                      filterUsers.map((user) => (
-                        <div
-                          className="flex items-center space-x-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
-                          key={user._id}
-                          onClick={() => handleUserClick(user?._id)}
-                        >
-                          <Search className="absolute text-sm text-gray-400" />
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                              {user?.profilePicture ? (
-                                <AvatarImage
-                                  src={user?.profilePicture}
-                                  alt={user?.username}
-                                />
-                              ) : (
-                                <AvatarFallback>
-                                  {userPlaceholder}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                            <span>{user?.username}</span>
+                      filterUsers.map((user) => {
+                        // Create placeholder for each user in search results
+                        const searchUserPlaceholder = user?.username
+                          ?.split(" ")
+                          .map((name) => name[0])
+                          .join("");
+
+                        return (
+                          <div
+                            className="flex items-center space-x-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
+                            key={user._id}
+                            onClick={() => handleUserClick(user?._id)}
+                          >
+                            <Search className="absolute text-sm text-gray-400" />
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                {user?.profilePicture ? (
+                                  <AvatarImage
+                                    src={user?.profilePicture}
+                                    alt={user?.username}
+                                  />
+                                ) : (
+                                  <AvatarFallback>
+                                    {searchUserPlaceholder}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <span>{user?.username}</span>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <>
                         <div className="p-2 text-gray-500">No user Found</div>
