@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ImageIcon, Video, Laugh, Plus, X } from "lucide-react";
 
@@ -18,15 +18,58 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+import userStore from "@/store/userStore";
+import { usePostStore } from "@/store/usePostStore";
+
 const Picker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
+  const { user } = userStore();
+  const { handleCreatePost } = usePostStore();
+  const [fileType, setFileType] = useState("");
+  const [loading, setLoading] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [filePreview, setFilePreview] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+
+  const fileInputRef = useRef(null);
+
+  const userPlaceholder = user?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
 
   const handleEmojiClick = (emojiObject) => {
     setPostContent((prev) => prev + emojiObject.emoji);
+  };
+
+  const handleFileChnage = (e) => {
+    const file = e.target.files[0];
+    setSelectedFile(file);
+    setFileType(file.type);
+    setFilePreview(URL.createObjectURL(file));
+  };
+
+  const handlePost = async () => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("content", postContent);
+      if (selectedFile) {
+        formData.append("media", selectedFile);
+      }
+      await handleCreatePost(formData);
+      setPostContent("");
+      setSelectedFile(null);
+      setFilePreview(null);
+      setIsPostFormOpen(false);
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,15 +77,20 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
       <CardContent className="p-4">
         <div className="flex space-x-4">
           <Avatar>
-            <AvatarImage />
-            <AvatarFallback className="dark:bg-gray-400">ID</AvatarFallback>
+            {user?.profilePicture ? (
+              <AvatarImage src={user?.profilePicture} alt={user?.username} />
+            ) : (
+              <AvatarFallback className="dark:bg-gray-400">
+                {userPlaceholder}
+              </AvatarFallback>
+            )}
           </Avatar>
 
           <Dialog open={isPostFormOpen} onOpenChange={setIsPostFormOpen}>
             <DialogTrigger asChild>
               <div className="w-full">
                 <Input
-                  placeholder={`what's on your mind, Inul Dev?`}
+                  placeholder={`what's on your mind, ${user?.username}?`}
                   readOnly
                   className="cursor-pointer rounded-full h-12 dark:bg-[rgb(58,59,60)] placeholder:text-gray-500 dark:placeholder:text-gray-400 w-full"
                 />
@@ -80,71 +128,103 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
               <Separator />
               <div className="flex items-center space-x-3 py-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage />
-                  <AvatarFallback className="dark:bg-gray-400">
-                    ID
-                  </AvatarFallback>
+                  {user?.profilePicture ? (
+                    <AvatarImage
+                      src={user?.profilePicture}
+                      alt={user?.username}
+                    />
+                  ) : (
+                    <AvatarFallback>{userPlaceholder}</AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
-                  <p className="font-semibold">Inul Dev</p>
+                  <p className="font-semibold">{user?.username}</p>
                 </div>
               </div>
               <Textarea
-                placeholder={`what's on your mind, Inul Dev?`}
+                placeholder={`what's on your mind, ${user?.username}?`}
                 className="min-h-[100px] text-md"
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
               />
               <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="relative mt-4 border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center"
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2"
+                {(showImageUpload || filePreview) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="relative mt-4 border-2 border-dashed border-gray-300 rounded-lg p-8 flex  flex-col items-center justify-center"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={() => {
+                        setShowImageUpload(false);
+                        setSelectedFile(null);
+                        setFilePreview(null);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
 
-                  {filePreview ? (
-                    fileType.startsWith("image") ? (
-                      <img />
+                    {filePreview ? (
+                      fileType.startsWith("image") ? (
+                        <img
+                          src={filePreview}
+                          alt="preview_img"
+                          className="w-full h-auto max-h-[300px] object-cover"
+                        />
+                      ) : (
+                        <video
+                          controls
+                          src={filePreview}
+                          className="w-full h-auto max-h-[300px] object-cover"
+                        />
+                      )
                     ) : (
-                      <video />
-                    )
-                  ) : (
-                    <>
-                      <Plus className="h-12 w-12 text-gray-400 mb-2 cursor-pointer" />
-                      <p className="text-center  text-gray-500">
-                        Add Photos/Videos
-                      </p>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    className="hidden"
-                  />
-                </motion.div>
+                      <>
+                        <Plus
+                          className="h-12 w-12 text-gray-400 mb-2 cursor-pointer"
+                          onClick={() => fileInputRef.current.click()}
+                        />
+                        <p className="text-center  text-gray-500 ">
+                          Add Photos/Videos
+                        </p>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      className="hidden"
+                      onChange={handleFileChnage}
+                      ref={fileInputRef}
+                    />
+                  </motion.div>
+                )}
               </AnimatePresence>
 
               <div className="bg-gray-200 dark:bg-gray-700 p-4 rounded-lg mt-4">
                 <p className="font-semibold mb-2">Add Your Post</p>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="icon">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowImageUpload(!showImageUpload)}
+                  >
                     <ImageIcon className="h-4 w-4 text-green-500" />
                   </Button>
-                  <Button variant="outline" size="icon">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowImageUpload(!showImageUpload)}
+                  >
                     <Video className="h-4 w-4 text-red-500" />
                   </Button>
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setShowEmojiPicker(true)}
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   >
                     <Laugh className="h-4 w-4 text-orange-500" />
                   </Button>
@@ -170,8 +250,8 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
                 </motion.div>
               )}
               <div className="flex justify-end mt-4">
-                <Button className="bg-blue-500 text-white hover:bg-blue-600">
-                  Post
+                <Button className="bg-blue-500 text-white" onClick={handlePost}>
+                  {loading ? "Saving..." : "Post"}
                 </Button>
               </div>
             </DialogContent>

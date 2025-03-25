@@ -3,51 +3,38 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { usePostStore } from "@/store/usePostStore";
 
 import StoryCard from "./StoryCard";
 
 const StorySection = () => {
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [maxScroll, setMaxScroll] = useState(0);
   const containerRef = useRef();
+  const [maxScroll, setMaxScroll] = useState(0);
+  const { story, fetchStoryPost } = usePostStore();
+  const [scrollPosition, setScrollPosition] = useState(0);
 
-  const storyPosts = [
-    {
-      _id: 1,
-      mediaUrl: "https://www.google.com/",
-      mediaType: "video",
-      user: {
-        username: "inuldev",
-      },
-    },
-  ];
+  useEffect(() => {
+    fetchStoryPost();
+  }, [fetchStoryPost]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (container) {
       const updateMaxScroll = () => {
-        setMaxScroll(
-          container.scrollWidth - container.offsetWidth,
-          setScrollPosition(container.scrollLeft)
-        );
-        updateMaxScroll();
-        window.addEventListener("resize", updateMaxScroll);
-
-        return () => {
-          window.removeEventListener("resize", updateMaxScroll);
-        };
+        setMaxScroll(container.scrollWidth - container.offsetWidth);
+        setScrollPosition(container.scrollLeft);
       };
+      updateMaxScroll();
+      window.addEventListener("resize", updateMaxScroll);
+      return () => window.removeEventListener("resize", updateMaxScroll);
     }
-  }, [storyPosts]);
+  }, [story]);
 
   const scroll = (direction) => {
     const container = containerRef.current;
     if (container) {
       const scrollAmount = direction === "left" ? -200 : 200;
-      container.scrollBy({
-        left: scrollAmount,
-        behavior: "smooth",
-      });
+      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
 
@@ -72,12 +59,11 @@ const StorySection = () => {
           dragConstraints={{
             right: 0,
             left:
-              -((storyPosts.length + 1) * 200) +
-              containerRef.current?.offsetWidth,
+              -((story.length + 1) * 200) + containerRef.current?.offsetWidth,
           }}
         >
           <StoryCard isAddStory={true} />
-          {storyPosts?.map((story) => (
+          {story?.map((story) => (
             <StoryCard story={story} key={story._id} />
           ))}
         </motion.div>

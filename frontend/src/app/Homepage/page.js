@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import toast from "react-hot-toast";
+import React, { useEffect, useState } from "react";
+
+import { usePostStore } from "@/store/usePostStore";
 
 import PostCard from "../posts/PostCard";
 import NewPostForm from "../posts/NewPostForm";
@@ -9,46 +12,51 @@ import LeftSideBar from "../components/LeftSideBar";
 import RightSideBar from "../components/RightSideBar";
 
 const HomePage = () => {
+  const [likePosts, setLikePosts] = useState(new Set());
   const [isPostFormOpen, setIsPostFormOpen] = useState(false);
 
-  const posts = [
-    {
-      _id: 1,
-      content: "This is a sample post.",
-      mediaUrl:
-        "https://images.pexels.com/photos/13003306/pexels-photo-13003306.jpeg?auto=compress&cs=tinysrgb&w=600&lazy=load",
-      mediaType: "image",
-      comments: [
-        {
-          _id: 1,
-          user: {
-            _id: 1,
-            text: "This is a sample comment.",
-            username: "johndoe",
-            createdAt: "22-03-2025",
-          },
-        },
-        {
-          _id: 2,
-          user: {
-            _id: 2,
-            text: "This is another sample comment.",
-            username: "janedoe",
-            createdAt: "22-03-2025",
-          },
-        },
-        {
-          _id: 3,
-          user: {
-            _id: 3,
-            text: "This is yet another sample comment.",
-            username: "janedoe",
-            createdAt: "22-03-2025",
-          },
-        },
-      ],
-    },
-  ];
+  const {
+    posts,
+    fetchPost,
+    handleLikePost,
+    handleCommentPost,
+    handleSharePost,
+  } = usePostStore();
+
+  useEffect(() => {
+    fetchPost();
+  }, [fetchPost]);
+
+  useEffect(() => {
+    const saveLikes = localStorage.getItem("likePosts");
+    if (saveLikes) {
+      setLikePosts(new Set(JSON.parse(saveLikes)));
+    }
+  }, []);
+
+  const handleLike = async (postId) => {
+    const updatedLikePost = new Set(likePosts);
+    if (updatedLikePost.has(postId)) {
+      updatedLikePost.delete(postId);
+      toast.success("post liked successfully");
+    } else {
+      updatedLikePost.add(postId);
+      toast.success("post unliked successfully");
+    }
+    setLikePosts(updatedLikePost);
+    localStorage.setItem(
+      "likePosts",
+      JSON.stringify(Array.from(updatedLikePost))
+    );
+
+    try {
+      await handleLikePost(postId);
+      await fetchPost();
+    } catch (error) {
+      console.error(error);
+      toast.error("failed to like or unlike the post");
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -63,7 +71,20 @@ const HomePage = () => {
             />
             <div className="mt-6 space-y-6 mb-4">
               {posts.map((post) => (
-                <PostCard key={post?._id} post={post} />
+                <PostCard
+                  key={post._id}
+                  post={post}
+                  isLiked={likePosts.has(post?._id)}
+                  onLike={() => handleLike(post?._id)}
+                  onComment={async (comment) => {
+                    await handleCommentPost(post?._id, comment.text);
+                    await fetchPost();
+                  }}
+                  onShare={async () => {
+                    await handleSharePost(post?._id);
+                    await fetchPost();
+                  }}
+                />
               ))}
             </div>
           </div>
