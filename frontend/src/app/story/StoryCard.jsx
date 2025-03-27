@@ -116,17 +116,19 @@ const StoryCard = ({ isAddStory, story }) => {
         transition={{ duration: 0.2 }}
       >
         <Card
-          className={`w-40 h-60 relative overflow-hidden rounded-xl cursor-pointer 
-            ${
-              !isAddStory &&
-              "hover:ring-2 hover:ring-blue-500 transition-all duration-200"
-            }`}
+          className={`w-40 h-60 relative overflow-hidden rounded-xl ${
+            !isAddStory &&
+            "hover:ring-2 hover:ring-blue-500 transition-all duration-200"
+          }`}
           onClick={isAddStory ? undefined : handleStoryClick}
         >
           <CardContent className="p-0 h-full">
             {isAddStory ? (
               <div className="w-full h-full flex flex-col">
-                <div className="h-3/4 w-full relative border-b">
+                <div
+                  className="h-3/4 w-full relative border-b hover:bg-black hover:bg-opacity-20 transition-all duration-200"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <Avatar className="w-full h-full rounded-none">
                     {user?.profilePicture ? (
                       <AvatarImage
@@ -142,7 +144,7 @@ const StoryCard = ({ isAddStory, story }) => {
                       </div>
                     )}
                   </Avatar>
-                  <div className="absolute inset-0 bg-black bg-opacity-20" />
+                  <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-30 transition-all duration-200" />
                 </div>
                 <div className="h-1/4 w-full bg-white dark:bg-gray-800 flex flex-col items-center justify-center">
                   <Button
@@ -172,12 +174,14 @@ const StoryCard = ({ isAddStory, story }) => {
                     src={story.mediaUrl}
                     alt={story.user?.username}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 ) : (
                   <video
                     src={story.mediaUrl}
                     className="w-full h-full object-cover"
                     muted
+                    loading="lazy"
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent" />

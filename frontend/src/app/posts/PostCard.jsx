@@ -10,6 +10,8 @@ import {
   VolumeX,
   Maximize2,
   Loader,
+  Play,
+  Pause,
 } from "lucide-react";
 
 import { formateDate } from "@/lib/utils";
@@ -30,15 +32,14 @@ import {
 import PostComments from "./PostComments";
 
 const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const commentInputRef = useRef(null);
-  const videoRef = useRef(null);
   const cardRef = useRef(null);
+  const videoRef = useRef(null);
+  const commentInputRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const handleCommentClick = () => {
     setShowComments(true);
@@ -62,10 +63,8 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       videoRef.current.requestFullscreen();
-      setIsFullscreen(true);
     } else {
       document.exitFullscreen();
-      setIsFullscreen(false);
     }
   };
 
@@ -227,6 +226,26 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
                     Your browser does not support the video tag
                   </video>
                   <div className="absolute bottom-4 right-4 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="bg-black/50 hover:bg-black/70"
+                      onClick={() => {
+                        if (videoRef.current) {
+                          if (videoRef.current.paused) {
+                            videoRef.current.play();
+                          } else {
+                            videoRef.current.pause();
+                          }
+                        }
+                      }}
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-4 w-4 text-white" />
+                      ) : (
+                        <Play className="h-4 w-4 text-white" />
+                      )}
+                    </Button>
                     <Button
                       size="sm"
                       variant="secondary"
