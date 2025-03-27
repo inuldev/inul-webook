@@ -25,7 +25,15 @@ const EditBio = ({ isOpen, onClose, initialData, id, fetchProfile }) => {
     reset,
     formState: { isSubmitting },
   } = useForm({
-    defaultValues: initialData,
+    defaultValues: initialData || {
+      bioText: "",
+      liveIn: "",
+      relationship: "",
+      workplace: "",
+      education: "",
+      phone: "",
+      hometown: "",
+    },
   });
 
   const handleEditBio = async (data) => {
@@ -40,7 +48,10 @@ const EditBio = ({ isOpen, onClose, initialData, id, fetchProfile }) => {
   };
 
   useEffect(() => {
-    reset(initialData);
+    // Only reset if initialData is an object
+    if (initialData && typeof initialData === "object") {
+      reset(initialData);
+    }
   }, [isOpen, initialData, reset]);
 
   return (

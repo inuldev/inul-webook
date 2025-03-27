@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import toast from "react-hot-toast";
+import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MoreHorizontal, ThumbsUp, MessageCircle, Share2 } from "lucide-react";
 
@@ -15,38 +16,70 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+import { formateDate } from "@/lib/utils";
 import PostComments from "@/app/posts/PostComments";
 
-const PostsContent = ({ post }) => {
+const PostsContent = ({ post, isLiked, onShare, onComment, onLike }) => {
+  const commentInputRef = useRef(null);
   const [showComments, setShowComments] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
-  const generateSharedLink = () => {
-    return `http://localhost:3000/${post?.id}`;
+  const userPlaceholder = post?.user?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
+
+  const handleCommentClick = () => {
+    setShowComments(true);
+    setTimeout(() => {
+      commentInputRef.current?.focus();
+    }, 0);
   };
 
-  const handleShare = (platform) => {
+  const generateSharedLink = () => {
+    return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/${post?._id}`;
+  };
+
+  const handleShare = async (platform) => {
     const url = generateSharedLink();
-    let shareUrl;
-    switch (platform) {
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-        break;
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?url=${url}`;
-        break;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${url}`;
-        break;
-      case "copy":
-        navigator.clipboard.writeText(url);
-        setIsShareDialogOpen(false);
-        return;
-      default:
-        return;
+    try {
+      switch (platform) {
+        case "facebook":
+          window.open(
+            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+              url
+            )}`,
+            "_blank"
+          );
+          break;
+        case "twitter":
+          window.open(
+            `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+              url
+            )}&text=${encodeURIComponent(post?.content || "")}`,
+            "_blank"
+          );
+          break;
+        case "linkedin":
+          window.open(
+            `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+              url
+            )}`,
+            "_blank"
+          );
+          break;
+        case "copy":
+          await navigator.clipboard.writeText(url);
+          toast.success("Link copied to clipboard!");
+          break;
+        default:
+          return;
+      }
+      onShare();
+      setIsShareDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to share post");
     }
-    window.open(shareUrl, "_blank");
-    setIsShareDialogOpen(false);
   };
 
   return (
@@ -61,12 +94,24 @@ const PostsContent = ({ post }) => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3 cursor-pointer">
               <Avatar>
-                <AvatarImage />
-                <AvatarFallback className="dark:bg-gray-400">ID</AvatarFallback>
+                {post?.user?.profilePicture ? (
+                  <AvatarImage
+                    src={post?.user?.profilePicture}
+                    alt={post?.user?.username}
+                  />
+                ) : (
+                  <AvatarFallback className="dark:bg-gray-400">
+                    {userPlaceholder}
+                  </AvatarFallback>
+                )}
               </Avatar>
               <div>
-                <p className="font-semibold dark:text-white">Inul Dev</p>
-                <p className="text-xs text-gray-500">22-03-2025</p>
+                <p className="font-semibold dark:text-white">
+                  {post?.user?.username}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formateDate(post?.createdAt)}
+                </p>
               </div>
             </div>
             <Button variant="ghost" className="dark:hover:bg-gray-500">
@@ -89,28 +134,35 @@ const PostsContent = ({ post }) => {
           )}
           <div className="flex justify-between items-center mb-4">
             <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
-              3 likes
+              {post?.likeCount} likes
             </span>
             <div className="flex gap-3">
               <span
                 className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer"
                 onClick={() => setShowComments(!showComments)}
               >
-                3 comments
+                {post?.commentCount} comments
               </span>
               <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
-                1 share
+                {post?.shareCount} shares
               </span>
             </div>
           </div>
           <Separator className="mb-2 dark:bg-gray-400" />
           <div className="flex justify-between mb-2">
-            <Button variant="ghost" className={`flex-1 dark:hover:bg-gray-600`}>
+            <Button
+              variant="ghost"
+              className={`flex-1 dark:hover:bg-gray-600 ${
+                isLiked ? "text-blue-600" : ""
+              }`}
+              onClick={onLike}
+            >
               <ThumbsUp className="mr-2 h-4 w-4" /> Like
             </Button>
             <Button
               variant="ghost"
               className={`flex-1 dark:hover:bg-gray-600 `}
+              onClick={handleCommentClick}
             >
               <MessageCircle className="mr-2 h-4 w-4" /> Comment
             </Button>
@@ -123,6 +175,7 @@ const PostsContent = ({ post }) => {
                 <Button
                   variant="ghost"
                   className="flex-1 dark:hover:bg-gray-500"
+                  onClick={onShare}
                 >
                   <Share2 className="mr-2 h-4 w-4" />
                   Share
@@ -159,7 +212,11 @@ const PostsContent = ({ post }) => {
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <PostComments post={post} />
+                <PostComments
+                  post={post}
+                  onComment={onComment}
+                  commentInputRef={commentInputRef}
+                />
               </motion.div>
             )}
           </AnimatePresence>

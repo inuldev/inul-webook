@@ -1,6 +1,9 @@
-import React from "react";
+import toast from "react-hot-toast";
 import { motion } from "framer-motion";
+import React, { useEffect } from "react";
 import { MoreHorizontal, UserX } from "lucide-react";
+
+import { userFriendStore } from "@/store/userFriendsStore";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,21 +15,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const MutualFriends = () => {
-  const mutualFriends = [
-    {
-      _id: 1,
-      username: "John Doe",
-      profilePicture:
-        "https://images.pexels.com/photos/30797307/pexels-photo-30797307/free-photo-of-smiling-man-with-grey-hair-and-sunglasses-outdoors.jpeg?auto=compress&cs=tinysrgb&w=600&lazy=load",
-    },
-    {
-      _id: 2,
-      username: "Jane Doe",
-      profilePicture:
-        "https://images.pexels.com/photos/2010922/pexels-photo-2010922.jpeg?auto=compress&cs=tinysrgb&w=600&lazy=load",
-    },
-  ];
+const MutualFriends = ({ id, isOwner, fetchProfile }) => {
+  const { fetchMutualFriends, mutualFriends, UnfollowUser } = userFriendStore();
+  useEffect(() => {
+    if (id) {
+      fetchMutualFriends(id);
+    }
+  }, [id, fetchMutualFriends]);
+
+  const handleUnfollow = async (userId) => {
+    await UnfollowUser(userId);
+    toast.success("you have unfollow successfully");
+    await fetchProfile();
+  };
+
+  const userPlaceholder = id?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
 
   return (
     <motion.div
@@ -48,14 +54,14 @@ const MutualFriends = () => {
               >
                 <div className="flex items-center space-x-4">
                   <Avatar>
-                    {friend?.profilePicture !== "" ? (
+                    {friend?.profilePicture ? (
                       <AvatarImage
                         src={friend?.profilePicture}
                         alt={friend?.username}
                       />
                     ) : (
                       <AvatarFallback className="dark:bg-gray-400">
-                        {friend?.username.slice(0, 2)}
+                        {userPlaceholder}
                       </AvatarFallback>
                     )}
                   </Avatar>
@@ -63,7 +69,9 @@ const MutualFriends = () => {
                     <p className="font-semibold dark:text-gray-100">
                       {friend?.username}
                     </p>
-                    <p className="text-sm text-gray-400">2 followers</p>
+                    <p className="text-sm text-gray-400">
+                      {friend?.followerCount} followers
+                    </p>
                   </div>
                 </div>
                 <DropdownMenu>
@@ -72,11 +80,18 @@ const MutualFriends = () => {
                       <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-gray-300" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <UserX className="h-4 w-4 mr-2" /> Unfollow
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
+                  {isOwner && (
+                    <DropdownMenuContent
+                      align="end"
+                      onClick={async () => {
+                        await handleUnfollow(friend?._id);
+                      }}
+                    >
+                      <DropdownMenuItem>
+                        <UserX className="h-4 w-4 mr-2" /> Unfollow
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  )}
                 </DropdownMenu>
               </div>
             ))}

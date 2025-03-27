@@ -206,11 +206,6 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
                 />
               ) : (
                 <div className="relative group">
-                  {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/20">
-                      <Loader className="w-8 h-8 animate-spin text-white" />
-                    </div>
-                  )}
                   <video
                     ref={videoRef}
                     className="w-full h-auto rounded-lg max-h-[500px]"
@@ -221,6 +216,7 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
                     onPlay={handleVideoPlay}
                     onPause={handleVideoPause}
                     loop
+                    loading="lazy"
                   >
                     <source src={post?.mediaUrl} type="video/mp4" />
                     Your browser does not support the video tag
@@ -240,6 +236,11 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
                         }
                       }}
                     >
+                      {isLoading ? (
+                        <Loader className="h-4 w-4 animate-spin text-white" />
+                      ) : (
+                        <span className="sr-only">Loading...</span>
+                      )}
                       {isPlaying ? (
                         <Pause className="h-4 w-4 text-white" />
                       ) : (

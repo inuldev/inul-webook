@@ -6,7 +6,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ProfileDetails from "./ProfileDetails";
 
-const ProfileTabs = () => {
+const ProfileTabs = ({
+  id,
+  profileData,
+  isOwner,
+  setProfileData,
+  fetchProfile,
+}) => {
   const [activeTab, setActiveTab] = useState("posts");
 
   return (
@@ -23,7 +29,14 @@ const ProfileTabs = () => {
           <TabsTrigger value="photos">Photos</TabsTrigger>
         </TabsList>
         <div className="mt-6">
-          <ProfileDetails activeTab={activeTab} />
+          <ProfileDetails
+            activeTab={activeTab}
+            profileData={profileData}
+            id={id}
+            isOwner={isOwner}
+            setProfileData={setProfileData}
+            fetchProfile={fetchProfile}
+          />
         </div>
       </Tabs>
     </div>

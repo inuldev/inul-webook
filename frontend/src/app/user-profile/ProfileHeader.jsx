@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, PenLine, X, Upload, Save } from "lucide-react";
+
+import {
+  updateUserCoverPhoto,
+  updateUserProfile,
+} from "@/service/user.service";
+import userStore from "@/store/userStore";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +23,96 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ProfileHeader = () => {
+const ProfileHeader = ({
+  id,
+  profileData,
+  isOwner,
+  setProfileData,
+  fetchProfile,
+}) => {
+  const { setUser } = userStore();
+  const [loading, setLoading] = useState(false);
+  const [coverPhotoFile, setCoverPhotoFile] = useState(null);
   const [isEditCoverModel, setIsEditCoverModel] = useState(false);
-  const [isEditProfileModel, setIsEditProfileModel] = useState(false);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState(null);
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [isEditProfileModel, setIsEditProfileModel] = useState(false);
+  const [profilePicturePreview, setProfilePicturePreview] = useState(null);
+
+  const { register, handleSubmit, setValue } = useForm({
+    defaultValues: {
+      username: profileData?.username,
+      dateOfBirth: profileData?.dateOfBirth?.split("T")[0],
+      gender: profileData?.gender,
+    },
+  });
+
+  const profileImageInputRef = useRef();
+  const coverImageInputRef = useRef();
+
+  const onSubmitProfile = async (data) => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("username", data.username);
+      formData.append("dateOfBirth", data.dateOfBirth);
+      formData.append("gender", data.gender);
+
+      if (profilePictureFile) {
+        formData.append("profilePicture", profilePictureFile);
+      }
+
+      const updateProfile = await updateUserProfile(id, formData);
+      setProfileData({ ...profileData, ...updateProfile });
+      setIsEditProfileModel(false);
+      setProfilePicturePreview(null);
+      setUser(updateProfile);
+      await fetchProfile();
+    } catch (error) {
+      console.error("error updating user profile", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePictureFile(file);
+
+      const previewUrl = URL.createObjectURL(file);
+      setProfilePicturePreview(previewUrl);
+    }
+  };
+
+  const onSubmitCoverPhoto = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      if (coverPhotoFile) {
+        formData.append("coverPhoto", coverPhotoFile);
+      }
+      const updateProfile = await updateUserCoverPhoto(id, formData);
+      setProfileData({ ...profileData, coverPhoto: updateProfile.coverPhoto });
+      setIsEditCoverModel(false);
+      setCoverPhotoFile(null);
+    } catch (error) {
+      console.error("error updating user cover photo", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCoverPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCoverPhotoFile(file);
+
+      const previewUrl = URL.createObjectURL(file);
+      setCoverPhotoPreview(previewUrl);
+    }
+  };
 
   return (
     <div className="relative">
@@ -27,34 +120,53 @@ const ProfileHeader = () => {
         className="relative h-64 md:h-80 bg-gray-300 overflow-hidden cursor-pointer"
         onClick={() => setIsEditCoverModel(true)}
       >
-        <img src="" alt="cover" className="w-full h-full object-cover" />
-        <Button
-          className="absolute bottom-4 right-4 flex items-center"
-          variant="secondary"
-          size="sm"
-        >
-          <Camera className=" mr-0 md:mr-2 h-4 w-4" />
-          <span className="hidden md:block">Edit Cover Photo</span>
-        </Button>
+        <img
+          src={profileData?.coverPhoto}
+          alt="cover"
+          className="w-full h-full object-cover"
+        />
+        {isOwner && (
+          <Button
+            className="absolute bottom-4 right-4 flex items-center"
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsEditCoverModel(true)}
+          >
+            <Camera className=" mr-0 md:mr-2 h-4 w-4" />
+            <span className="hidden md:block">Edit Cover Photo</span>
+          </Button>
+        )}
       </div>
       {/* profile section */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
         <div className="flex flex-col md:flex-row items-center md:items-end space-x-3 md:space-x-5 mb-4">
           <Avatar className="w-32 h-32 border-4 border-white/50 dark:border-gray-700 mr-3 md:mr-5">
-            <AvatarImage />
-            <AvatarFallback className="dark:bg-gray-400">ID</AvatarFallback>
+            <AvatarImage
+              src={profileData?.profilePicture}
+              alt={profileData?.username}
+            />
+            <AvatarFallback className="dark:bg-gray-400">
+              {profileData?.username
+                ?.split(" ")
+                .map((name) => name[0])
+                .join("")}
+            </AvatarFallback>
           </Avatar>
           <div className="mt-4 md:mt-0 text-center md:text-left flex-grow">
-            <h1 className="text-3xl font-bold">Inul Dev</h1>
-            <p className="text-gray-400 font-semibold">2 friends</p>
+            <h1 className="text-3xl font-bold">{profileData?.username}</h1>
+            <p className="text-gray-400 font-semibold">
+              {profileData?.followerCount} friends
+            </p>
           </div>
-          <Button
-            className="mt-4 md:mt-0"
-            onClick={() => setIsEditProfileModel(true)}
-          >
-            <PenLine className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
+          {isOwner && (
+            <Button
+              className="mt-4 md:mt-0 cursor-pointer"
+              onClick={() => setIsEditProfileModel(true)}
+            >
+              <PenLine className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+          )}
         </div>
       </div>
 
@@ -85,31 +197,58 @@ const ProfileHeader = () => {
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <form className="space-y-4">
+              <form
+                className="space-y-4"
+                onSubmit={handleSubmit(onSubmitProfile)}
+              >
                 <div className="flex flex-col items-center mb-4">
                   <Avatar className="w-24 h-24 border-4 border-white/50 dark:border-gray-700 mb-2">
-                    <AvatarImage />
+                    <AvatarImage
+                      src={profilePicturePreview || profileData?.profilePicture}
+                      alt={profileData?.username}
+                    />
                     <AvatarFallback className="dark:bg-gray-400">
-                      ID
+                      {profileData?.username
+                        ?.split(" ")
+                        .map((name) => name[0])
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
-                  <input type="file" accept="image/*" className="hidden" />
-                  <Button type="button" variant="outline" size="sm">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={profileImageInputRef}
+                    onChange={handleProfilePictureChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => profileImageInputRef.current?.click()}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Change Profile Picture
                   </Button>
                 </div>
                 <div>
                   <Label htmlFor="username">Username</Label>
-                  <Input id="username" />
+                  <Input id="username" {...register("username")} />
                 </div>
                 <div>
                   <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input id="dateOfBirth" type="date" />
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    {...register("dateOfBirth")}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="gender">Gender</Label>
-                  <Select>
+                  <Select
+                    onValueChange={(value) => setValue("gender", value)}
+                    defaultValue={profileData?.gender}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
@@ -124,8 +263,8 @@ const ProfileHeader = () => {
                   type="submit"
                   className="w-full bg-blue-600 hover:bg-blue-400 text-white"
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  <Save className="w-4 h-4 mr-2" />{" "}
+                  {loading ? "Saving..." : "Save Changes"}
                 </Button>
               </form>
             </motion.div>
@@ -160,7 +299,7 @@ const ProfileHeader = () => {
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={onSubmitCoverPhoto}>
                 <div className="flex flex-col items-center mb-4">
                   {coverPhotoPreview && (
                     <img
@@ -169,18 +308,30 @@ const ProfileHeader = () => {
                       className="w-full h-40 object-cover rounded-lg mb-4"
                     />
                   )}
-                  <input type="file" accept="image/*" className="hidden" />
-                  <Button type="button" variant="outline" size="sm">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={coverImageInputRef}
+                    onChange={handleCoverPhotoChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => coverImageInputRef.current?.click()}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Select New Cover Photo
                   </Button>
                 </div>
                 <Button
                   type="submit"
+                  disabled={!coverPhotoFile}
                   className="w-full bg-blue-600 hover:bg-blue-400 text-white"
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Cover Photo
+                  <Save className="w-4 h-4 mr-2" />{" "}
+                  {loading ? "Saving..." : "Save Cover Photo"}
                 </Button>
               </form>
             </motion.div>
