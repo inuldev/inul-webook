@@ -1,8 +1,19 @@
-import React, { useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
-import { MoreHorizontal, ThumbsUp, MessageCircle, Share2 } from "lucide-react";
+import React, { useRef, useState, useCallback } from "react";
+import {
+  MoreHorizontal,
+  ThumbsUp,
+  MessageCircle,
+  Share2,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Loader,
+} from "lucide-react";
 
 import { formateDate } from "@/lib/utils";
+
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +32,13 @@ import PostComments from "./PostComments";
 const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const commentInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const cardRef = useRef(null);
 
   const handleCommentClick = () => {
     setShowComments(true);
@@ -35,38 +52,105 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
     .map((name) => name[0])
     .join("");
 
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      videoRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const handleVideoLoad = () => {
+    setIsLoading(false);
+  };
+
+  const handleVideoError = () => {
+    setIsLoading(false);
+    toast.error("Failed to load video");
+  };
+
+  const handleVideoPlay = () => {
+    setIsPlaying(true);
+  };
+
+  const handleVideoPause = () => {
+    setIsPlaying(false);
+  };
+
+  // Intersection Observer for video autoplay
+  const handleVideoIntersection = useCallback((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        videoRef.current?.play().catch(() => {});
+      } else {
+        videoRef.current?.pause();
+      }
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (post?.mediaType === "video" && videoRef.current) {
+      const observer = new IntersectionObserver(handleVideoIntersection, {
+        threshold: 0.5,
+      });
+      observer.observe(videoRef.current);
+      return () => observer.disconnect();
+    }
+  }, [handleVideoIntersection, post?.mediaType]);
+
   const generateSharedLink = () => {
     return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/${post?._id}`;
   };
 
-  const handleShare = (platform) => {
+  const handleShare = async (platform) => {
     const url = generateSharedLink();
-    let shareUrl;
-    switch (platform) {
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          url
-        )}`;
-        break;
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-          url
-        )}&text=${encodeURIComponent(post?.content || "")}&via=YourAppName`;
-        break;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          url
-        )}`;
-        break;
-      case "copy":
-        navigator.clipboard.writeText(url);
-        setIsShareDialogOpen(false);
-        return;
-      default:
-        return;
+    try {
+      switch (platform) {
+        case "facebook":
+          window.open(
+            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+              url
+            )}`,
+            "_blank"
+          );
+          break;
+        case "twitter":
+          window.open(
+            `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+              url
+            )}&text=${encodeURIComponent(post?.content || "")}`,
+            "_blank"
+          );
+          break;
+        case "linkedin":
+          window.open(
+            `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+              url
+            )}`,
+            "_blank"
+          );
+          break;
+        case "copy":
+          await navigator.clipboard.writeText(url);
+          toast.success("Link copied to clipboard!");
+          break;
+        default:
+          return;
+      }
+      onShare();
+      setIsShareDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to share post");
     }
-    window.open(shareUrl, "_blank");
-    setIsShareDialogOpen(false);
   };
 
   return (
@@ -75,9 +159,11 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      ref={cardRef}
     >
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="p-6 dark:text-white">
+          {/* User Info Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3 cursor-pointer">
               <Avatar>
@@ -105,36 +191,87 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
               <MoreHorizontal className="dark:text-white h-4 w-4" />
             </Button>
           </div>
-          <p className="mb-4">{post?.content}</p>
-          {post?.mediaUrl && post.mediaType === "image" && (
-            <img
-              src={post?.mediaUrl}
-              alt="post_image"
-              className="w-full h-auto rounded-lg mb-4"
-            />
+
+          {/* Post Content */}
+          <p className="mb-4 whitespace-pre-wrap">{post?.content}</p>
+
+          {/* Media Content */}
+          {post?.mediaUrl && (
+            <div className="relative rounded-lg overflow-hidden mb-4">
+              {post.mediaType === "image" ? (
+                <img
+                  src={post?.mediaUrl}
+                  alt="post_image"
+                  className="w-full h-auto rounded-lg"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="relative group">
+                  {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/20">
+                      <Loader className="w-8 h-8 animate-spin text-white" />
+                    </div>
+                  )}
+                  <video
+                    ref={videoRef}
+                    className="w-full h-auto rounded-lg max-h-[500px]"
+                    playsInline
+                    muted={isMuted}
+                    onLoadedData={handleVideoLoad}
+                    onError={handleVideoError}
+                    onPlay={handleVideoPlay}
+                    onPause={handleVideoPause}
+                    loop
+                  >
+                    <source src={post?.mediaUrl} type="video/mp4" />
+                    Your browser does not support the video tag
+                  </video>
+                  <div className="absolute bottom-4 right-4 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="bg-black/50 hover:bg-black/70"
+                      onClick={toggleMute}
+                    >
+                      {isMuted ? (
+                        <VolumeX className="h-4 w-4 text-white" />
+                      ) : (
+                        <Volume2 className="h-4 w-4 text-white" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="bg-black/50 hover:bg-black/70"
+                      onClick={toggleFullscreen}
+                    >
+                      <Maximize2 className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
-          {post?.mediaUrl && post.mediaType === "video" && (
-            <video controls className="w-full h-[500px] rounded-lg mb-4">
-              <source src={post?.mediaUrl} type="video/mp4" />
-              Your browser does not support the video tag
-            </video>
-          )}
+
+          {/* Engagement Stats */}
           <div className="flex justify-between items-center mb-4">
-            <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
+            <span className="text-sm text-gray-500 dark:text-gray-400 hover:underline cursor-pointer">
               {post?.likeCount} likes
             </span>
             <div className="flex gap-3">
               <span
-                className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:underline cursor-pointer"
                 onClick={() => setShowComments(!showComments)}
               >
                 {post?.commentCount} comments
               </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
-                {post?.shareCount} share
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {post?.shareCount} shares
               </span>
             </div>
           </div>
+
+          {/* Action Buttons */}
           <Separator className="mb-2 dark:bg-gray-400" />
           <div className="flex justify-between mb-2">
             <Button
@@ -148,12 +285,13 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
             </Button>
             <Button
               variant="ghost"
-              className={`flex-1 dark:hover:bg-gray-600 `}
+              className="flex-1 dark:hover:bg-gray-600"
               onClick={handleCommentClick}
             >
               <MessageCircle className="mr-2 h-4 w-4" /> Comment
             </Button>
 
+            {/* Share Dialog */}
             <Dialog
               open={isShareDialogOpen}
               onOpenChange={setIsShareDialogOpen}
@@ -162,10 +300,8 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
                 <Button
                   variant="ghost"
                   className="flex-1 dark:hover:bg-gray-500"
-                  onClick={onShare}
                 >
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Share
+                  <Share2 className="mr-2 h-4 w-4" /> Share
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -175,21 +311,32 @@ const PostCard = ({ post, isLiked, onShare, onComment, onLike }) => {
                     Choose where you want to share this post
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col space-y-4 ">
-                  <Button onClick={() => handleShare("facebook")}>
+                <div className="flex flex-col space-y-4">
+                  <Button
+                    onClick={() => handleShare("facebook")}
+                    className="bg-[#1877f2] hover:bg-[#1877f2]/90"
+                  >
                     Share on Facebook
                   </Button>
-                  <Button onClick={() => handleShare("twitter")}>
+                  <Button
+                    onClick={() => handleShare("twitter")}
+                    className="bg-[#1da1f2] hover:bg-[#1da1f2]/90"
+                  >
                     Share on Twitter
                   </Button>
-                  <Button onClick={() => handleShare("linkedin")}>
-                    Share on Linkedin
+                  <Button
+                    onClick={() => handleShare("linkedin")}
+                    className="bg-[#0a66c2] hover:bg-[#0a66c2]/90"
+                  >
+                    Share on LinkedIn
                   </Button>
                   <Button onClick={() => handleShare("copy")}>Copy Link</Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Comments Section */}
           <Separator className="mb-2 dark:bg-gray-400" />
           <AnimatePresence>
             {showComments && (

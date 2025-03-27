@@ -1,7 +1,8 @@
 import dynamic from "next/dynamic";
+import toast from "react-hot-toast";
 import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ImageIcon, Video, Laugh, Plus, X } from "lucide-react";
+import { ImageIcon, Video, Laugh, Plus, X, Loader } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const fileInputRef = useRef(null);
 
@@ -45,8 +48,36 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
     setPostContent((prev) => prev + emojiObject.emoji);
   };
 
-  const handleFileChnage = (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file size (max 100MB for videos, 10MB for images)
+    const maxSize = file.type.startsWith("video")
+      ? 100 * 1024 * 1024
+      : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(
+        `File size should be less than ${
+          file.type.startsWith("video") ? "100MB" : "10MB"
+        }`
+      );
+      return;
+    }
+
+    // Validate file type
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "video/mp4",
+      "video/quicktime",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Invalid file type. Please use JPG, PNG, GIF or MP4");
+      return;
+    }
+
     setSelectedFile(file);
     setFileType(file.type);
     setFilePreview(URL.createObjectURL(file));
@@ -57,17 +88,33 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
       setLoading(true);
       const formData = new FormData();
       formData.append("content", postContent);
+
       if (selectedFile) {
         formData.append("media", selectedFile);
       }
-      await handleCreatePost(formData);
+
+      // Add upload progress tracking
+      const config = {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
+      };
+
+      await handleCreatePost(formData, config);
+
       setPostContent("");
       setSelectedFile(null);
       setFilePreview(null);
       setIsPostFormOpen(false);
-      setLoading(false);
+      setUploadProgress(0);
+      toast.success("Post created successfully!");
     } catch (error) {
       console.error(error);
+      toast.error("Failed to create post");
+    } finally {
       setLoading(false);
     }
   };
@@ -176,11 +223,23 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
                           className="w-full h-auto max-h-[300px] object-cover"
                         />
                       ) : (
-                        <video
-                          controls
-                          src={filePreview}
-                          className="w-full h-auto max-h-[300px] object-cover"
-                        />
+                        <div className="relative w-full">
+                          <video
+                            controls
+                            src={filePreview}
+                            className="w-full h-auto max-h-[300px] object-cover"
+                            onLoadedData={() => setVideoLoading(false)}
+                            onError={() => {
+                              setVideoLoading(false);
+                              toast.error("Error loading video preview");
+                            }}
+                          />
+                          {videoLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <Loader className="w-8 h-8 animate-spin text-white" />
+                            </div>
+                          )}
+                        </div>
                       )
                     ) : (
                       <>
@@ -197,7 +256,7 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
                       type="file"
                       accept="image/*,video/*"
                       className="hidden"
-                      onChange={handleFileChnage}
+                      onChange={handleFileChange}
                       ref={fileInputRef}
                     />
                   </motion.div>
@@ -250,8 +309,18 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
                 </motion.div>
               )}
               <div className="flex justify-end mt-4">
-                <Button className="bg-blue-500 text-white" onClick={handlePost}>
-                  {loading ? "Saving..." : "Post"}
+                <Button
+                  className="bg-blue-500 text-white"
+                  onClick={handlePost}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <span>Uploading... {uploadProgress}%</span>
+                    </div>
+                  ) : (
+                    "Post"
+                  )}
                 </Button>
               </div>
             </DialogContent>
