@@ -32,7 +32,7 @@ export const userFriendStore = create((set, get) => ({
     set({ loading: true });
     try {
       const friend = await getAllFriendsSuggestion();
-      set({ friendSuggestion: friend.data, isLoading: false });
+      set({ friendSuggestion: friend.data, loading: false });
     } catch (error) {
       set({ error, loading: false });
     } finally {

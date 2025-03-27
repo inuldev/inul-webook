@@ -38,10 +38,10 @@ const HomePage = () => {
     const updatedLikePost = new Set(likePosts);
     if (updatedLikePost.has(postId)) {
       updatedLikePost.delete(postId);
-      toast.success("post liked successfully");
+      toast.error("post unliked successfully");
     } else {
       updatedLikePost.add(postId);
-      toast.success("post unliked successfully");
+      toast.success("post liked successfully");
     }
     setLikePosts(updatedLikePost);
     localStorage.setItem(

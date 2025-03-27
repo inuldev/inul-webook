@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, MessageCircle, Share2, ThumbsUp, Send } from "lucide-react";
+
+import { formateDate } from "@/lib/utils";
+import userStore from "@/store/userStore";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,12 +22,39 @@ import {
 
 import VideoComments from "./VideoComments";
 
-const VideoCard = ({ post }) => {
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+const VideoCard = ({ post, isLiked, onShare, onComment, onLike }) => {
+  const { user } = userStore();
+  const commentInputRef = useRef(null);
+  const [commentText, setCommentText] = useState("");
   const [showComments, setShowComments] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  const handleCommentClick = () => {
+    setShowComments(true);
+    setTimeout(() => {
+      commentInputRef?.current?.focus();
+    }, 0);
+  };
+
+  const userPostPlaceholder = post?.user?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
+
+  const userPlaceholder = user?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
+
+  const handleCommentSubmit = async () => {
+    if (commentText.trim()) {
+      onComment({ text: commentText });
+      setCommentText("");
+    }
+  };
 
   const generateSharedLink = () => {
-    return `http://localhost:3000/${post?.id}`;
+    return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/${post?._id}`;
   };
 
   const handleShare = (platform) => {
@@ -32,13 +62,19 @@ const VideoCard = ({ post }) => {
     let shareUrl;
     switch (platform) {
       case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+          url
+        )}`;
         break;
       case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?url=${url}`;
+        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+          url
+        )}&text=${encodeURIComponent(post?.content || "")}&via=YourAppName`;
         break;
       case "linkedin":
-        shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${url}`;
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          url
+        )}`;
         break;
       case "copy":
         navigator.clipboard.writeText(url);
@@ -63,16 +99,26 @@ const VideoCard = ({ post }) => {
         <div className="flex items-center justify-between mb-4 px-4 mt-2">
           <div className="flex items-center">
             <Avatar className="h-10 w-10 rounded-full mr-3">
-              <AvatarImage />
-              <AvatarFallback className="dark:bg-gray-400">ID</AvatarFallback>
+              {post?.user?.profilePicture ? (
+                <AvatarImage
+                  src={post?.user?.profilePicture}
+                  alt={post?.user?.username}
+                />
+              ) : (
+                <AvatarFallback className="dark:bg-gray-400">
+                  {userPostPlaceholder}
+                </AvatarFallback>
+              )}
             </Avatar>
             <div>
-              <p className="font-semibold dark:text-white">Inul Dev</p>
+              <p className="font-semibold dark:text-white">
+                {post?.user?.username}
+              </p>
             </div>
           </div>
           <div className="flex items-center text-gray-500 dark:text-gray-400">
             <Clock className="h-4 w-4 mr-1" />
-            <span className="text-sm">22-03-2025</span>
+            <span className="text-sm">{formateDate(post?.createdAt)}</span>
           </div>
         </div>
         <div className="relative aspect-video bg-black mb-4">
@@ -88,7 +134,10 @@ const VideoCard = ({ post }) => {
           <div className="flex space-x-4">
             <Button
               variant="ghost"
-              className={`flex dark:hover:bg-gray-600 items-center`}
+              className={`flex dark:hover:bg-gray-600 items-center  ${
+                isLiked ? "text-blue-600" : ""
+              }`}
+              onClick={onLike}
             >
               <ThumbsUp className="mr-2 h-4 w-4" />
               <span>Like</span>
@@ -96,6 +145,7 @@ const VideoCard = ({ post }) => {
             <Button
               variant="ghost"
               className={`flex dark:hover:bg-gray-600 items-center`}
+              onClick={handleCommentClick}
             >
               <MessageCircle className="mr-2 h-4 w-4" />
               <span>Comment</span>
@@ -109,6 +159,7 @@ const VideoCard = ({ post }) => {
                 <Button
                   variant="ghost"
                   className="flex items-center dark:hover:bg-gray-500"
+                  onClick={onShare}
                 >
                   <Share2 className="mr-2 h-4 w-4" />
                   <span>Share</span>
@@ -138,17 +189,17 @@ const VideoCard = ({ post }) => {
           </div>
           <div className="flex space-x-4 ml-2 text-sm text-gray-500 dark:text-gray-400">
             <Button variant="ghost" size="sm">
-              2 likes
+              {post?.likeCount} Likes
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowComments(!showComments)}
             >
-              2 Comments
+              {post?.commentCount} Comments
             </Button>
             <Button variant="ghost" size="sm">
-              1 share
+              {post?.shareCount} Share
             </Button>
           </div>
         </div>
@@ -168,16 +219,26 @@ const VideoCard = ({ post }) => {
               </ScrollArea>
               <div className="flex items-center mt-4 p-2">
                 <Avatar className="h-10 w-10 rounded mr-3">
-                  <AvatarImage />
-                  <AvatarFallback className="dark:bg-gray-400">
-                    ID
-                  </AvatarFallback>
+                  {user?.profilePicture ? (
+                    <AvatarImage
+                      src={user?.profilePicture}
+                      alt={user?.username}
+                    />
+                  ) : (
+                    <AvatarFallback className="dark:bg-gray-400">
+                      {userPlaceholder}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <Input
                   className="flex-1 mr-2 dark:border-gray-400"
                   placeholder="Write a comment..."
+                  value={commentText}
+                  ref={commentInputRef}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCommentSubmit()}
                 />
-                <Button>
+                <Button onClick={handleCommentSubmit}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
