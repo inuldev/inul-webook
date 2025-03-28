@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import Loader from "@/lib/Loader";
 import { fetchUserProfile } from "@/service/user.service";
@@ -12,6 +12,7 @@ import ProfileHeader from "@/app/user-profile/ProfileHeader";
 const Page = () => {
   const params = useParams();
   const id = params.id;
+  const profileRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [profileData, setProfileData] = useState(null);
@@ -35,24 +36,24 @@ const Page = () => {
     }
   }, [id]);
 
-  if (!profileData) {
+  if (loading || !profileData) {
     return <Loader />;
   }
 
   return (
-    <div>
+    <div ref={profileRef}>
       <ProfileHeader
+        id={id}
         profileData={profileData}
         setProfileData={setProfileData}
         isOwner={isOwner}
-        id={id}
         fetchProfile={fetchProfile}
       />
       <ProfileTabs
+        id={id}
         profileData={profileData}
         setProfileData={setProfileData}
         isOwner={isOwner}
-        id={id}
         fetchProfile={fetchProfile}
       />
     </div>

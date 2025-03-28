@@ -40,13 +40,14 @@ export const userFriendStore = create((set, get) => ({
     }
   },
 
-  fetchMutualFriends: async () => {
+  fetchMutualFriends: async (userId) => {
     set({ loading: true });
     try {
-      const friend = await getMutualFriends();
-      set({ mutualFriends: friend, loading: false });
+      const friend = await getMutualFriends(userId);
+      set({ mutualFriends: friend.data || [], loading: false });
     } catch (error) {
-      set({ error, loading: false });
+      console.error("Error fetching mutual friends:", error);
+      set({ mutualFriends: [], error, loading: false });
     } finally {
       set({ loading: false });
     }

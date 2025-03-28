@@ -1,3 +1,4 @@
+import axios from "axios";
 import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
 import React, { useRef, useState } from "react";
@@ -102,27 +103,29 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
         formData.append("media", selectedFile);
       }
 
-      // Use fetch instead of XMLHttpRequest for simpler handling
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/posts`,
-        {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        }
-      );
+      // Create axios instance with upload progress
+      const response = await axios({
+        method: "post",
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/posts`,
+        data: formData,
+        withCredentials: true,
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
+      });
 
-      if (!response.ok) {
-        throw new Error("Post creation failed. Please try again."); // Custom error message
+      if (response.status === 200 || response.status === 201) {
+        // Reset form and close dialog
+        resetForm();
+        setIsPostFormOpen(false);
+
+        // Fetch updated posts
+        await fetchPost();
+        toast.success("Post created successfully");
       }
-
-      // Reset form and close dialog
-      resetForm();
-      setIsPostFormOpen(false);
-
-      // Fetch updated posts after successful creation
-      await fetchPost();
-      toast.success("Post created successfully");
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Failed to create post");
@@ -329,12 +332,14 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
                 >
                   {loading ? (
                     <div className="flex items-center gap-2">
-                      <Progress value={uploadProgress} className="w-full" />
-                      <span>
-                        {uploadProgress === 100
-                          ? "Processing..."
-                          : `Uploading ${uploadProgress}%`}
-                      </span>
+                      {uploadProgress === 100 ? (
+                        <span>Processing...</span>
+                      ) : (
+                        <>
+                          <Progress value={uploadProgress} className="w-24" />
+                          <span>{uploadProgress}%</span>
+                        </>
+                      )}
                     </div>
                   ) : (
                     "Post"

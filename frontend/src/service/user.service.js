@@ -66,10 +66,10 @@ export const fetchUserProfile = async (userId) => {
   }
 };
 
-export const getMutualFriends = async () => {
+export const getMutualFriends = async (userId) => {
   try {
-    const response = await axiosInstance.get("/users/mutual-friends");
-    return response?.data?.data;
+    const response = await axiosInstance.get(`/users/mutual-friends/${userId}`);
+    return response?.data;
   } catch (error) {
     console.log(error);
     throw error;

@@ -54,9 +54,9 @@ export const usePostStore = create((set) => ({
 
   //create a new post
   handleCreatePost: async (postData) => {
+    const newPost = await createPost(postData);
     set({ loading: true });
     try {
-      const newPost = await createPost(postData);
       set((state) => ({
         posts: [newPost, ...state.posts],
         loading: false,
@@ -71,9 +71,9 @@ export const usePostStore = create((set) => ({
 
   //create a new story
   handleCreateStory: async (storyData) => {
+    const newStory = await createStory(storyData);
     set({ loading: true });
     try {
-      const newStory = await createStory(storyData);
       set((state) => ({
         story: [newStory, ...state.story],
         loading: false,
@@ -86,7 +86,7 @@ export const usePostStore = create((set) => ({
     }
   },
 
-  //create a new story
+  //create a like on post
   handleLikePost: async (postId) => {
     set({ loading: true });
     try {
@@ -99,11 +99,11 @@ export const usePostStore = create((set) => ({
     }
   },
 
-  //create a new story
+  //create a comment on post
   handleCommentPost: async (postId, text) => {
+    const newComments = await commentsPost(postId, { text });
     set({ loading: true });
     try {
-      const newComments = await commentsPost(postId, { text });
       set((state) => ({
         posts: state.posts.map((post) =>
           post?._id === postId
@@ -119,7 +119,7 @@ export const usePostStore = create((set) => ({
     }
   },
 
-  //create a new story
+  //create a share on post
   handleSharePost: async (postId) => {
     set({ loading: true });
     try {
