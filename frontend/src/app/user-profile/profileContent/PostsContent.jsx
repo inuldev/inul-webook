@@ -1,7 +1,13 @@
 import toast from "react-hot-toast";
 import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MoreHorizontal, ThumbsUp, MessageCircle, Share2 } from "lucide-react";
+import {
+  MoreHorizontal,
+  ThumbsUp,
+  MessageCircle,
+  Share2,
+  Trash,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -15,11 +21,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { formateDate } from "@/lib/utils";
 import PostComments from "@/app/posts/PostComments";
 
-const PostsContent = ({ post, isLiked, onShare, onComment, onLike }) => {
+const PostsContent = ({
+  post,
+  isLiked,
+  onShare,
+  onComment,
+  onLike,
+  onDelete,
+}) => {
   const commentInputRef = useRef(null);
   const [showComments, setShowComments] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -114,9 +133,22 @@ const PostsContent = ({ post, isLiked, onShare, onComment, onLike }) => {
                 </p>
               </div>
             </div>
-            <Button variant="ghost" className="dark:hover:bg-gray-500">
-              <MoreHorizontal className="dark:text-white h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="dark:hover:bg-gray-500">
+                  <MoreHorizontal className="dark:text-white h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600"
+                  onClick={onDelete}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete Post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <p className="mb-4">{post?.content}</p>
           {post?.mediaUrl && post.mediaType === "image" && (

@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import toast from "react-hot-toast";
 
 import {
   createPost,
@@ -62,11 +61,10 @@ export const usePostStore = create((set) => ({
         posts: [newPost, ...state.posts],
         loading: false,
       }));
-      toast.success("Post created successfully");
+
       return newPost;
     } catch (error) {
       set({ error, loading: false });
-      toast.error("failed to create a post");
       throw error;
     }
   },
@@ -80,11 +78,10 @@ export const usePostStore = create((set) => ({
         story: [newStory, ...state.story],
         loading: false,
       }));
-      toast.success("Story created successfully");
+
       return newStory;
     } catch (error) {
       set({ error, loading: false });
-      toast.error("failed to create a story");
       throw error;
     }
   },
@@ -116,10 +113,8 @@ export const usePostStore = create((set) => ({
       }));
       const posts = await getAllPosts(); // Fetch fresh data
       set({ posts });
-      toast.success("Comments added successfully");
     } catch (error) {
       set({ error, loading: false });
-      toast.error("failed to add comments");
       throw error;
     }
   },
@@ -131,10 +126,8 @@ export const usePostStore = create((set) => ({
       await sharePost(postId);
       const posts = await getAllPosts(); // Fetch fresh data
       set({ posts });
-      toast.success("post share successfully");
     } catch (error) {
       set({ error, loading: false });
-      toast.error("failed to share this post");
       throw error;
     }
   },
@@ -147,6 +140,8 @@ export const usePostStore = create((set) => ({
       set((state) => ({
         posts: state.posts.filter((post) => post._id !== postId),
       }));
+      const posts = await getAllPosts(); // Fetch fresh data
+      set({ posts });
     } catch (error) {
       console.error(error);
       throw error;

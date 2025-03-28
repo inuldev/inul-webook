@@ -29,7 +29,7 @@ const HomePage = () => {
 
   useEffect(() => {
     fetchPost();
-  }, [fetchPost]);
+  }, []);
 
   useEffect(() => {
     const saveLikes = localStorage.getItem("likePosts");

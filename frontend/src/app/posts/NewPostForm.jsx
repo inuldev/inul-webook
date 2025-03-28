@@ -27,7 +27,7 @@ const Picker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
   const { user } = userStore();
-  const { handleCreatePost } = usePostStore();
+  const { fetchPost } = usePostStore();
   const [fileType, setFileType] = useState("");
   const [loading, setLoading] = useState(false);
   const [postContent, setPostContent] = useState("");
@@ -102,43 +102,27 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
         formData.append("media", selectedFile);
       }
 
-      const response = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
+      // Use fetch instead of XMLHttpRequest for simpler handling
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/posts`,
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        }
+      );
 
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const progress = (event.loaded / event.total) * 100;
-            setUploadProgress(progress);
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status === 201) {
-            resolve(JSON.parse(xhr.response).data);
-          } else {
-            reject(new Error("Upload failed"));
-          }
-        };
-
-        xhr.onerror = () => {
-          reject(new Error("Network error occurred"));
-        };
-
-        xhr.open(
-          "POST",
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/posts`,
-          true
-        );
-        xhr.withCredentials = true;
-        xhr.send(formData);
-      });
-
-      // Update store with the new post
-      await handleCreatePost(response);
+      if (!response.ok) {
+        throw new Error("Post creation failed. Please try again."); // Custom error message
+      }
 
       // Reset form and close dialog
       resetForm();
       setIsPostFormOpen(false);
+
+      // Fetch updated posts after successful creation
+      await fetchPost();
+      toast.success("Post created successfully");
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Failed to create post");

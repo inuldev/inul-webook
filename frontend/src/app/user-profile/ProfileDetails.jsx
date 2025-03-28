@@ -13,6 +13,7 @@ import {
   Rss,
 } from "lucide-react";
 
+import userStore from "@/store/userStore";
 import { formatDateInDDMMYYY } from "@/lib/utils";
 import { usePostStore } from "@/store/usePostStore";
 
@@ -30,6 +31,7 @@ const ProfileDetails = ({
   isOwner,
   fetchProfile,
 }) => {
+  const { user } = userStore();
   const [isEditBioModel, setIsEditBioModel] = useState(false);
   const [likePosts, setLikePosts] = useState(new Set());
   const {
@@ -38,6 +40,7 @@ const ProfileDetails = ({
     handleLikePost,
     handleCommentPost,
     handleSharePost,
+    handleDeletePost,
   } = usePostStore();
 
   useEffect(() => {
@@ -77,6 +80,16 @@ const ProfileDetails = ({
     }
   };
 
+  const handleDelete = async (postId) => {
+    try {
+      await handleDeletePost(postId);
+      toast.success("Post deleted successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete post");
+    }
+  };
+
   const tabContent = {
     posts: (
       <div className="flex flex-col lg:flex-row gap-6">
@@ -95,6 +108,11 @@ const ProfileDetails = ({
                 await handleSharePost(post?._id);
                 await fetchProfile();
               }}
+              onDelete={
+                post.user._id === user?._id
+                  ? () => handleDelete(post?._id)
+                  : undefined
+              }
             />
           ))}
         </div>
