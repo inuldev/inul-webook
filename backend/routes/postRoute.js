@@ -12,6 +12,7 @@ const {
   addCommentToPost,
   getAllStory,
   createStory,
+  deletePost, // Make sure this is imported
 } = require("../controllers/postController");
 
 //create post
@@ -47,5 +48,8 @@ router.post(
 
 //get all story
 router.get("/story", authMiddleware, getAllStory);
+
+//delete post
+router.delete("/posts/:postId", authMiddleware, deletePost);
 
 module.exports = router;

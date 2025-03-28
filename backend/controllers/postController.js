@@ -6,16 +6,20 @@ const { uploadFileToCloudinary } = require("../config/cloudinary");
 const createPost = async (req, res) => {
   try {
     const userId = req.user.userId;
-
     const { content } = req.body;
     const file = req.file;
     let mediaUrl = null;
     let mediaType = null;
 
     if (file) {
-      const uploadResult = await uploadFileToCloudinary(file);
-      mediaUrl = uploadResult?.secure_url;
-      mediaType = file.mimetype.startsWith("video") ? "video" : "image";
+      try {
+        const uploadResult = await uploadFileToCloudinary(file);
+        mediaUrl = uploadResult?.secure_url;
+        mediaType = file.mimetype.startsWith("video") ? "video" : "image";
+      } catch (uploadError) {
+        console.log("Error uploading file:", uploadError);
+        return response(res, 400, "File upload failed. " + uploadError.message);
+      }
     }
 
     //create a new post
@@ -50,9 +54,14 @@ const createStory = async (req, res) => {
     let mediaType = null;
 
     if (file) {
-      const uploadResult = await uploadFileToCloudinary(file);
-      mediaUrl = uploadResult?.secure_url;
-      mediaType = file.mimetype.startsWith("video") ? "video" : "image";
+      try {
+        const uploadResult = await uploadFileToCloudinary(file);
+        mediaUrl = uploadResult?.secure_url;
+        mediaType = file.mimetype.startsWith("video") ? "video" : "image";
+      } catch (uploadError) {
+        console.log("Error uploading file:", uploadError);
+        return response(res, 400, "File upload failed. " + uploadError.message);
+      }
     }
 
     //create a new story
@@ -206,6 +215,34 @@ const sharePost = async (req, res) => {
   }
 };
 
+const deletePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.userId;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return response(res, 404, "Post not found");
+    }
+
+    // Check if the user is the owner of the post
+    if (post.user.toString() !== userId) {
+      return response(
+        res,
+        403,
+        "Unauthorized: You can only delete your own posts"
+      );
+    }
+
+    await Post.findByIdAndDelete(postId);
+    return response(res, 200, "Post deleted successfully");
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    return response(res, 500, "Internal server error", error.message);
+  }
+};
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -215,4 +252,5 @@ module.exports = {
   sharePost,
   createStory,
   getAllStory,
+  deletePost,
 };

@@ -13,6 +13,7 @@ const passport = require("./controllers/googleController");
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 const corsOptions = {
@@ -24,7 +25,6 @@ app.use(cors(corsOptions));
 connectDb();
 app.use(passport.initialize());
 
-//api route
 app.use("/auth", authRoute);
 app.use("/users", postRoute);
 app.use("/users", userRoute);

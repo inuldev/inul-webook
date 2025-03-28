@@ -1,9 +1,9 @@
 "use client";
 
-import toast from "react-hot-toast";
 import React, { useEffect, useState } from "react";
-
 import { usePostStore } from "@/store/usePostStore";
+import userStore from "@/store/userStore";
+import toast from "react-hot-toast";
 
 import PostCard from "../posts/PostCard";
 import NewPostForm from "../posts/NewPostForm";
@@ -12,6 +12,7 @@ import LeftSideBar from "../components/LeftSideBar";
 import RightSideBar from "../components/RightSideBar";
 
 const HomePage = () => {
+  const { user } = userStore();
   const [likePosts, setLikePosts] = useState(new Set());
   const [isPostFormOpen, setIsPostFormOpen] = useState(false);
 
@@ -21,18 +22,12 @@ const HomePage = () => {
     handleLikePost,
     handleCommentPost,
     handleSharePost,
+    handleDeletePost,
   } = usePostStore();
 
   useEffect(() => {
     fetchPost();
   }, [fetchPost]);
-
-  useEffect(() => {
-    const saveLikes = localStorage.getItem("likePosts");
-    if (saveLikes) {
-      setLikePosts(new Set(JSON.parse(saveLikes)));
-    }
-  }, []);
 
   const handleLike = async (postId) => {
     const updatedLikePost = new Set(likePosts);
@@ -51,10 +46,18 @@ const HomePage = () => {
 
     try {
       await handleLikePost(postId);
-      await fetchPost();
     } catch (error) {
       console.error(error);
       toast.error("failed to like or unlike the post");
+    }
+  };
+
+  const handleDelete = async (postId) => {
+    try {
+      await handleDeletePost(postId);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete post");
     }
   };
 
@@ -74,16 +77,20 @@ const HomePage = () => {
                 <PostCard
                   key={post._id}
                   post={post}
+                  currentUser={user}
                   isLiked={likePosts.has(post?._id)}
                   onLike={() => handleLike(post?._id)}
                   onComment={async (comment) => {
                     await handleCommentPost(post?._id, comment.text);
-                    await fetchPost();
                   }}
                   onShare={async () => {
                     await handleSharePost(post?._id);
-                    await fetchPost();
                   }}
+                  onDelete={
+                    post.user._id === user?._id
+                      ? () => handleDelete(post?._id)
+                      : undefined
+                  }
                 />
               ))}
             </div>

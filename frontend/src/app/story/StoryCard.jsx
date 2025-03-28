@@ -53,6 +53,7 @@ const StoryCard = ({ isAddStory, story }) => {
       "image/gif",
       "video/mp4",
       "video/quicktime",
+      "video/x-m4v",
     ];
     if (!validTypes.includes(file.type)) {
       toast.error("Invalid file type. Please use JPG, PNG, GIF or MP4");
