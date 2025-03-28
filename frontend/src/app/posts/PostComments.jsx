@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Send, Smile } from "lucide-react";
-import EmojiPicker from "emoji-picker-react";
+import { ChevronDown, ChevronUp, Send } from "lucide-react";
 
 import { formateDate } from "@/lib/utils";
 import userStore from "@/store/userStore";
@@ -8,65 +7,109 @@ import userStore from "@/store/userStore";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const PostComments = ({ post, onComment, commentInputRef }) => {
-  const [comment, setComment] = useState("");
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [showAllComments, setShowAllComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const { user } = userStore();
+  const visibleComments = showAllComments
+    ? post?.comments
+    : post?.comments?.slice(0, 2);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
-    onComment(comment);
-    setComment("");
-    setShowEmoji(false);
+  const handleCommentSubmit = async () => {
+    if (commentText.trim()) {
+      onComment({ text: commentText });
+      setCommentText("");
+    }
   };
 
-  return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="flex items-center space-x-2">
-          <Input
-            ref={commentInputRef}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Write a comment..."
-            className="flex-1 bg-secondary/50 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-600"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowEmoji(!showEmoji)}
-            className="dark:hover:bg-gray-700"
-          >
-            <Smile className="h-4 w-4 text-muted-foreground" />
-          </Button>
-          <Button
-            type="submit"
-            className="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
-          >
-            Post
-          </Button>
-        </div>
-        {showEmoji && (
-          <div className="absolute right-0 top-12 z-50">
-            <EmojiPicker
-              theme="dark"
-              onEmojiClick={(emoji) => {
-                setComment((prev) => prev + emoji.emoji);
-                setShowEmoji(false);
-              }}
-            />
-          </div>
-        )}
-      </form>
+  const userPlaceholder = user?.username
+    ?.split(" ")
+    .map((name) => name[0])
+    .join("");
 
-      <ScrollArea className="h-[300px]">
-        {post?.comments?.map((comment) => (
-          <Comment key={comment._id} comment={comment} />
+  return (
+    <div className="mt-4">
+      <h3 className="font-semibold mb-2">Comments</h3>
+      <div className="max-h-60 overflow-y-auto pr-2">
+        {visibleComments?.map((comment, index) => (
+          <div key={index} className="flex items-start space-x-2 mb-2">
+            <Avatar className="w-8 h-8">
+              {comment?.user?.profilePicture ? (
+                <AvatarImage
+                  src={comment?.user?.profilePicture}
+                  alt={comment?.user?.username}
+                />
+              ) : (
+                <AvatarFallback className="dark:bg-gray-400">
+                  {comment?.user?.username
+                    ?.split(" ")
+                    .map((name) => name[0])
+                    .join(" ")}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <div className="flex flex-col">
+              <div className="rounded-lg p-2">
+                <p className="font-bold text-sm">{comment?.user?.username}</p>
+                <p className="text-sm">{comment?.text}</p>
+              </div>
+              <div className="flex items-center text-xs text-gray-400">
+                <Button variant="ghost" size="sm">
+                  Like
+                </Button>
+                <Button variant="ghost" size="sm">
+                  Reply
+                </Button>
+                <span>{formateDate(comment.createdAt)}</span>
+              </div>
+            </div>
+          </div>
         ))}
-      </ScrollArea>
+        {post?.comments?.length > 2 && (
+          <p
+            className="w-40 mt-2 text-blue-500 dark:text-gray-300 cursor-pointer"
+            onClick={() => setShowAllComments(!showAllComments)}
+          >
+            {showAllComments ? (
+              <>
+                Show Less <ChevronUp className="ml-2 h-4 w-4" />
+              </>
+            ) : (
+              <>
+                Show All Comments <ChevronDown className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center space-x-2 mt-4">
+        <Avatar className="w-8 h-8">
+          {user?.profilePicture ? (
+            <AvatarImage src={user?.profilePicture} alt={user?.username} />
+          ) : (
+            <AvatarFallback className="dark:bg-gray-400">
+              {userPlaceholder}
+            </AvatarFallback>
+          )}
+        </Avatar>
+        <Input
+          value={commentText}
+          ref={commentInputRef}
+          onChange={(e) => setCommentText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleCommentSubmit()}
+          placeholder="Write a comment..."
+          className="flex-grow rounded-full h-12 dark:bg-[rgb(58,59,60)]"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:bg-transparent"
+          onClick={handleCommentSubmit}
+        >
+          <Send className="h-5 w-5 text-blue-500" />
+        </Button>
+      </div>
     </div>
   );
 };

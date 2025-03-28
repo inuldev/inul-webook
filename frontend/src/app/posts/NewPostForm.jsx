@@ -54,8 +54,8 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
 
     // Validate file size (max 100MB for videos, 10MB for images)
     const maxSize = file.type.startsWith("video")
-      ? 100 * 1024 * 1024 // 100MB for videos
-      : 10 * 1024 * 1024; // 10MB for images
+      ? 100 * 1024 * 1024
+      : 10 * 1024 * 1024;
 
     if (file.size > maxSize) {
       toast.error(
@@ -67,18 +67,9 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
     }
 
     // Validate file type
-    const validTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "video/mp4",
-      "video/quicktime",
-      "video/x-m4v",
-    ];
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "video/mp4"];
     if (!validTypes.includes(file.type)) {
-      toast.error(
-        "Invalid file type. Please use JPG, PNG, GIF, MP4, M4V or QuickTime."
-      );
+      toast.error("Invalid file type. Please use JPG, PNG, GIF or MP4");
       return;
     }
 
@@ -148,8 +139,6 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
       // Reset form and close dialog
       resetForm();
       setIsPostFormOpen(false);
-
-      toast.success("Post created successfully!");
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Failed to create post");

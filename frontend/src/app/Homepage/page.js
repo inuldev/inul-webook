@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { usePostStore } from "@/store/usePostStore";
-import userStore from "@/store/userStore";
 import toast from "react-hot-toast";
+import React, { useEffect, useState, useRef } from "react";
+
+import userStore from "@/store/userStore";
+import { usePostStore } from "@/store/usePostStore";
 
 import PostCard from "../posts/PostCard";
 import NewPostForm from "../posts/NewPostForm";
@@ -15,6 +16,7 @@ const HomePage = () => {
   const { user } = userStore();
   const [likePosts, setLikePosts] = useState(new Set());
   const [isPostFormOpen, setIsPostFormOpen] = useState(false);
+  const postRef = useRef(null);
 
   const {
     posts,
@@ -28,6 +30,13 @@ const HomePage = () => {
   useEffect(() => {
     fetchPost();
   }, [fetchPost]);
+
+  useEffect(() => {
+    const saveLikes = localStorage.getItem("likePosts");
+    if (saveLikes) {
+      setLikePosts(new Set(JSON.parse(saveLikes)));
+    }
+  }, []);
 
   const handleLike = async (postId) => {
     const updatedLikePost = new Set(likePosts);
@@ -55,6 +64,7 @@ const HomePage = () => {
   const handleDelete = async (postId) => {
     try {
       await handleDeletePost(postId);
+      toast.success("Post deleted successfully");
     } catch (error) {
       console.error(error);
       toast.error("Failed to delete post");
@@ -72,7 +82,7 @@ const HomePage = () => {
               isPostFormOpen={isPostFormOpen}
               setIsPostFormOpen={setIsPostFormOpen}
             />
-            <div className="mt-6 space-y-6 mb-4">
+            <div className="mt-6 space-y-6 mb-4" ref={postRef}>
               {posts.map((post) => (
                 <PostCard
                   key={post._id}

@@ -1,5 +1,6 @@
 "use client";
 
+import toast from "react-hot-toast";
 import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, MessageCircle, Share2, ThumbsUp, Send } from "lucide-react";
@@ -57,34 +58,46 @@ const VideoCard = ({ post, isLiked, onShare, onComment, onLike }) => {
     return `${process.env.NEXT_PUBLIC_FRONTEND_URL}/${post?._id}`;
   };
 
-  const handleShare = (platform) => {
+  const handleShare = async (platform) => {
     const url = generateSharedLink();
-    let shareUrl;
-    switch (platform) {
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-          url
-        )}`;
-        break;
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(
-          url
-        )}&text=${encodeURIComponent(post?.content || "")}&via=YourAppName`;
-        break;
-      case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          url
-        )}`;
-        break;
-      case "copy":
-        navigator.clipboard.writeText(url);
-        setIsShareDialogOpen(false);
-        return;
-      default:
-        return;
+    try {
+      switch (platform) {
+        case "facebook":
+          window.open(
+            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+              url
+            )}`,
+            "_blank"
+          );
+          break;
+        case "twitter":
+          window.open(
+            `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+              url
+            )}&text=${encodeURIComponent(post?.content || "")}`,
+            "_blank"
+          );
+          break;
+        case "linkedin":
+          window.open(
+            `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+              url
+            )}`,
+            "_blank"
+          );
+          break;
+        case "copy":
+          await navigator.clipboard.writeText(url);
+          toast.success("Link copied to clipboard!");
+          break;
+        default:
+          return;
+      }
+      onShare();
+      setIsShareDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to share post");
     }
-    window.open(shareUrl, "_blank");
-    setIsShareDialogOpen(false);
   };
 
   return (

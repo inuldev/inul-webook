@@ -91,6 +91,7 @@ export const getAllUserPosts = async (userId) => {
   }
 };
 
+//delete a post
 export const deletePost = async (postId) => {
   try {
     const result = await axiosInstance.delete(`/users/posts/${postId}`);

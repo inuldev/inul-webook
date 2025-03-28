@@ -12,7 +12,7 @@ const {
   addCommentToPost,
   getAllStory,
   createStory,
-  deletePost, // Make sure this is imported
+  deletePost,
 } = require("../controllers/postController");
 
 //create post

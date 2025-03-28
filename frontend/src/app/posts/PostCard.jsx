@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 
 import { formateDate } from "@/lib/utils";
-
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,9 +40,9 @@ const PostCard = ({
   onDelete,
   currentUser,
 }) => {
-  const commentInputRef = useRef(null);
-  const [showComments, setShowComments] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const commentInputRef = useRef(null);
 
   const handleCommentClick = () => {
     setShowComments(true);
@@ -110,10 +109,10 @@ const PostCard = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="w-full bg-card dark:bg-[#242526] dark:border-gray-700">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center space-x-4">
+      <Card>
+        <CardContent className="p-6 dark:text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3 cursor-pointer">
               <Avatar>
                 {post?.user?.profilePicture ? (
                   <AvatarImage
@@ -121,16 +120,16 @@ const PostCard = ({
                     alt={post?.user?.username}
                   />
                 ) : (
-                  <AvatarFallback className="bg-gray-200 dark:bg-gray-600">
+                  <AvatarFallback className="dark:bg-gray-400">
                     {userPostPlaceholder}
                   </AvatarFallback>
                 )}
               </Avatar>
               <div>
-                <p className="font-semibold text-foreground">
+                <p className="font-semibold dark:text-white">
                   {post?.user?.username}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-500">
                   {formateDate(post?.createdAt)}
                 </p>
               </div>
@@ -141,17 +140,14 @@ const PostCard = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="dark:hover:bg-gray-500"
                   >
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal className="h-4 w-4 dark:text-white" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="dark:bg-[#242526] dark:border-gray-700"
-                >
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600 dark:hover:bg-gray-700 cursor-pointer"
+                    className="text-red-600 focus:text-red-600"
                     onClick={onDelete}
                   >
                     <Trash className="mr-2 h-4 w-4" />
@@ -161,7 +157,7 @@ const PostCard = ({
               </DropdownMenu>
             )}
           </div>
-          <p className="my-4 text-foreground">{post?.content}</p>
+          <p className="mb-4">{post?.content}</p>
           {post?.mediaUrl && post.mediaType === "image" && (
             <img
               src={post?.mediaUrl}
@@ -176,27 +172,27 @@ const PostCard = ({
             </video>
           )}
           <div className="flex justify-between items-center mb-4">
-            <span className="text-sm text-muted-foreground hover:underline cursor-pointer">
+            <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
               {post?.likeCount} likes
             </span>
             <div className="flex gap-3">
               <span
-                className="text-sm text-muted-foreground hover:underline cursor-pointer"
+                className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer"
                 onClick={() => setShowComments(!showComments)}
               >
                 {post?.commentCount} comments
               </span>
-              <span className="text-sm text-muted-foreground hover:underline cursor-pointer">
+              <span className="text-sm text-gray-500 dark:text-gray-400 hover:border-b-2 border-gray-400 cursor-pointer">
                 {post?.shareCount} share
               </span>
             </div>
           </div>
-          <Separator className="mb-2 dark:bg-gray-700" />
+          <Separator className="mb-2 dark:bg-gray-400" />
           <div className="flex justify-between mb-2">
             <Button
               variant="ghost"
-              className={`flex-1 dark:hover:bg-gray-700 dark:text-gray-200 ${
-                isLiked ? "text-blue-600 dark:text-blue-500" : ""
+              className={`flex-1 dark:hover:bg-gray-600 ${
+                isLiked ? "text-blue-600" : ""
               }`}
               onClick={onLike}
             >
@@ -204,7 +200,7 @@ const PostCard = ({
             </Button>
             <Button
               variant="ghost"
-              className="flex-1 dark:hover:bg-gray-700 dark:text-gray-200"
+              className={`flex-1 dark:hover:bg-gray-600 `}
               onClick={handleCommentClick}
             >
               <MessageCircle className="mr-2 h-4 w-4" /> Comment
@@ -217,52 +213,36 @@ const PostCard = ({
               <DialogTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex-1 dark:hover:bg-gray-700 dark:text-gray-200"
+                  className="flex-1 dark:hover:bg-gray-500"
                   onClick={onShare}
                 >
                   <Share2 className="mr-2 h-4 w-4" />
                   Share
                 </Button>
               </DialogTrigger>
-              <DialogContent className="dark:bg-[#242526] dark:border-gray-700">
+              <DialogContent>
                 <DialogHeader>
-                  <DialogTitle className="text-foreground">
-                    Share This Post
-                  </DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
+                  <DialogTitle>Share This Post</DialogTitle>
+                  <DialogDescription>
                     Choose where you want to share this post
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col space-y-4">
-                  <Button
-                    onClick={() => handleShare("facebook")}
-                    className="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
-                  >
+                <div className="flex flex-col space-y-4 ">
+                  <Button onClick={() => handleShare("facebook")}>
                     Share on Facebook
                   </Button>
-                  <Button
-                    onClick={() => handleShare("twitter")}
-                    className="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
-                  >
+                  <Button onClick={() => handleShare("twitter")}>
                     Share on Twitter
                   </Button>
-                  <Button
-                    onClick={() => handleShare("linkedin")}
-                    className="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
-                  >
+                  <Button onClick={() => handleShare("linkedin")}>
                     Share on Linkedin
                   </Button>
-                  <Button
-                    onClick={() => handleShare("copy")}
-                    className="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
-                  >
-                    Copy Link
-                  </Button>
+                  <Button onClick={() => handleShare("copy")}>Copy Link</Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-          <Separator className="mb-2 dark:bg-gray-700" />
+          <Separator className="mb-2 dark:bg-gray-400" />
           <AnimatePresence>
             {showComments && (
               <motion.div

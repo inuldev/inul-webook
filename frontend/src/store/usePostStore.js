@@ -13,7 +13,7 @@ import {
   deletePost,
 } from "@/service/post.service";
 
-export const usePostStore = create((set, get) => ({
+export const usePostStore = create((set) => ({
   posts: [],
   userPosts: [],
   story: [],
@@ -63,11 +63,11 @@ export const usePostStore = create((set, get) => ({
         loading: false,
       }));
       toast.success("Post created successfully");
-      return newPost; // Return the new post for confirmation
+      return newPost;
     } catch (error) {
       set({ error, loading: false });
       toast.error("failed to create a post");
-      throw error; // Throw the error to be handled by the caller
+      throw error;
     }
   },
 
@@ -81,46 +81,60 @@ export const usePostStore = create((set, get) => ({
         loading: false,
       }));
       toast.success("Story created successfully");
-      return newStory; // Return the new story for confirmation
+      return newStory;
     } catch (error) {
       set({ error, loading: false });
       toast.error("failed to create a story");
-      throw error; // Throw the error to be handled by the caller
-    }
-  },
-
-  //create a new story
-  handleLikePost: async (postId) => {
-    try {
-      await likePost(postId);
-      const posts = await getAllPosts(); // Fetch fresh data
-      set({ posts });
-    } catch (error) {
-      console.error(error);
       throw error;
     }
   },
 
   //create a new story
-  handleCommentPost: async (postId, comment) => {
+  handleLikePost: async (postId) => {
+    set({ loading: true });
     try {
-      await commentsPost(postId, { text: comment });
+      await likePost(postId);
       const posts = await getAllPosts(); // Fetch fresh data
       set({ posts });
     } catch (error) {
-      console.error(error);
+      set({ error, loading: false });
+      throw error;
+    }
+  },
+
+  //create a new story
+  handleCommentPost: async (postId, text) => {
+    set({ loading: true });
+    try {
+      const newComments = await commentsPost(postId, { text });
+      set((state) => ({
+        posts: state.posts.map((post) =>
+          post?._id === postId
+            ? { ...post, comments: [...post.comments, newComments] }
+            : post
+        ),
+      }));
+      const posts = await getAllPosts(); // Fetch fresh data
+      set({ posts });
+      toast.success("Comments added successfully");
+    } catch (error) {
+      set({ error, loading: false });
+      toast.error("failed to add comments");
       throw error;
     }
   },
 
   //create a new story
   handleSharePost: async (postId) => {
+    set({ loading: true });
     try {
       await sharePost(postId);
       const posts = await getAllPosts(); // Fetch fresh data
       set({ posts });
+      toast.success("post share successfully");
     } catch (error) {
-      console.error(error);
+      set({ error, loading: false });
+      toast.error("failed to share this post");
       throw error;
     }
   },
@@ -133,11 +147,9 @@ export const usePostStore = create((set, get) => ({
       set((state) => ({
         posts: state.posts.filter((post) => post._id !== postId),
       }));
-      toast.success("Post deleted successfully");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete post");
-      throw error; // Throw the error to be handled by the caller
+      throw error;
     }
   },
 }));
