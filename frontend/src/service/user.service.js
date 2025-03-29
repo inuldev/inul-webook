@@ -121,3 +121,15 @@ export const getAllUsers = async () => {
     throw error;
   }
 };
+
+export const searchUsers = async (query) => {
+  try {
+    const response = await axiosInstance.get(
+      `/users/search?q=${encodeURIComponent(query)}`
+    );
+    return response?.data?.data;
+  } catch (error) {
+    console.error("Error searching users:", error);
+    throw error;
+  }
+};

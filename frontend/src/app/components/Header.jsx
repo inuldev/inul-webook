@@ -22,7 +22,7 @@ import Loader from "@/lib/Loader";
 import userStore from "@/store/userStore";
 import { logout } from "@/service/auth.service";
 import useSidebarStore from "@/store/sidebarStore";
-import { getAllUsers } from "@/service/user.service";
+import { getAllUsers, searchUsers } from "@/service/user.service";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,15 +39,17 @@ import {
 const Header = () => {
   const router = useRouter();
   const searchRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
   const { theme, setTheme } = useTheme();
   const { user, clearUser } = userStore();
   const { toggleSidebar } = useSidebarStore();
   const [userList, setUserList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [filterUsers, setFilterUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("home");
+  const [filterUsers, setFilterUsers] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const userPlaceholder = user?.username
     ?.split(" ")
@@ -68,7 +70,7 @@ const Header = () => {
       }
       toast.success("user logged out successfully");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("failed to log out");
     }
   };
@@ -80,7 +82,7 @@ const Header = () => {
         const result = await getAllUsers();
         setUserList(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -106,18 +108,61 @@ const Header = () => {
     setIsSearchOpen(false);
   };
 
+  // Debounced search function
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Don't search if query is empty
+    if (!query.trim()) {
+      setFilterUsers([]);
+      setIsSearchOpen(false);
+      return;
+    }
+
+    setIsSearching(true);
+
+    // Debounce search to avoid too many filter operations
+    searchTimeoutRef.current = setTimeout(() => {
+      const filtered = userList.filter(
+        (user) =>
+          user.username.toLowerCase().includes(query.toLowerCase()) ||
+          user.email.toLowerCase().includes(query.toLowerCase())
+      );
+
+      setFilterUsers(filtered.slice(0, 8)); // Limit results to 8 users
+      setIsSearchOpen(true);
+      setIsSearching(false);
+    }, 300);
+  };
+
   const handleUserClick = async (userId) => {
     try {
       setLoading(true);
       setIsSearchOpen(false);
       setSearchQuery("");
-      router.push(`user-profile/${userId}`);
+      setFilterUsers([]);
+      router.push(`/user-profile/${userId}`);
     } catch (error) {
-      console.log(error);
+      toast.error("Failed to navigate to user profile");
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Clean up timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSearchClose = (e) => {
     if (!searchRef.current?.contains(e.target)) {
@@ -156,16 +201,19 @@ const Header = () => {
                   className="pl-8 w-40 md:w-64 h-10 bg-gray-100 dark:bg-[rgb(58,59,60)] rounded-full"
                   placeholder="search..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                   onFocus={() => setIsSearchOpen(true)}
                 />
               </div>
               {isSearchOpen && (
                 <div className="absolute top-full left-0 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg mt-1 z-50">
-                  <div className="p-2">
-                    {filterUsers.length > 0 ? (
+                  <div className="p-2 overflow-y-auto max-h-64">
+                    {isSearching ? (
+                      <div className="flex items-center justify-center p-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
+                      </div>
+                    ) : filterUsers.length > 0 ? (
                       filterUsers.map((user) => {
-                        // Create placeholder for each user in search results
                         const searchUserPlaceholder = user?.username
                           ?.split(" ")
                           .map((name) => name[0])
@@ -173,33 +221,40 @@ const Header = () => {
 
                         return (
                           <div
-                            className="flex items-center space-x-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer"
+                            className="flex items-center space-x-8 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer transition-colors"
                             key={user._id}
                             onClick={() => handleUserClick(user?._id)}
                           >
                             <Search className="absolute text-sm text-gray-400" />
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
+                              <Avatar className="h-8 w-8 flex-shrink-0">
                                 {user?.profilePicture ? (
                                   <AvatarImage
                                     src={user?.profilePicture}
                                     alt={user?.username}
                                   />
                                 ) : (
-                                  <AvatarFallback>
+                                  <AvatarFallback className="dark:bg-gray-600">
                                     {searchUserPlaceholder}
                                   </AvatarFallback>
                                 )}
                               </Avatar>
-                              <span>{user?.username}</span>
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {user?.username}
+                                </span>
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                                  {user?.email}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
                       })
                     ) : (
-                      <>
-                        <div className="p-2 text-gray-500">No user Found</div>
-                      </>
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                        No users found
+                      </div>
                     )}
                   </div>
                 </div>
