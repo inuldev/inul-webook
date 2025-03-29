@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { MoreHorizontal, UserX } from "lucide-react";
 
 import { userFriendStore } from "@/store/userFriendsStore";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const MutualFriends = ({ id, isOwner, fetchProfile }) => {
+  const router = useRouter();
   const { fetchMutualFriends, mutualFriends, UnfollowUser } = userFriendStore();
 
   useEffect(() => {
@@ -29,6 +31,15 @@ const MutualFriends = ({ id, isOwner, fetchProfile }) => {
     toast.success("you have unfollow successfully");
     fetchProfile();
     fetchMutualFriends(id);
+  };
+
+  const handleUserClick = (userId) => {
+    try {
+      router.push(`/user-profile/${userId}`);
+    } catch (error) {
+      console.error("Navigation error:", error);
+      toast.error("Failed to navigate to user profile");
+    }
   };
 
   return (
@@ -63,7 +74,10 @@ const MutualFriends = ({ id, isOwner, fetchProfile }) => {
                     key={friend?._id}
                     className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg flex items-start justify-between"
                   >
-                    <div className="flex items-center space-x-4">
+                    <div
+                      className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => handleUserClick(friend?._id)}
+                    >
                       <Avatar>
                         {friend?.profilePicture ? (
                           <AvatarImage
@@ -90,14 +104,21 @@ const MutualFriends = ({ id, isOwner, fetchProfile }) => {
                     {isOwner && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-gray-300" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => handleUnfollow(friend?._id)}
-                            className="text-red-500 focus:text-red-500"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnfollow(friend?._id);
+                            }}
+                            className="text-red-500 focus:text-red-500 cursor-pointer"
                           >
                             <UserX className="h-4 w-4 mr-2" /> Unfollow
                           </DropdownMenuItem>

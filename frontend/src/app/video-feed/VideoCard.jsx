@@ -1,6 +1,7 @@
 "use client";
 
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, MessageCircle, Share2, ThumbsUp, Send } from "lucide-react";
@@ -24,6 +25,7 @@ import {
 import VideoComments from "./VideoComments";
 
 const VideoCard = ({ post, isLiked, onShare, onComment, onLike }) => {
+  const router = useRouter();
   const { user } = userStore();
   const commentInputRef = useRef(null);
   const [commentText, setCommentText] = useState("");
@@ -100,6 +102,15 @@ const VideoCard = ({ post, isLiked, onShare, onComment, onLike }) => {
     }
   };
 
+  const handleUserClick = (userId) => {
+    try {
+      router.push(`/user-profile/${userId}`);
+    } catch (error) {
+      console.error("Navigation error:", error);
+      toast.error("Failed to navigate to user profile");
+    }
+  };
+
   return (
     <motion.div
       key={post?._id}
@@ -110,7 +121,10 @@ const VideoCard = ({ post, isLiked, onShare, onComment, onLike }) => {
     >
       <div>
         <div className="flex items-center justify-between mb-4 px-4 mt-2">
-          <div className="flex items-center">
+          <div
+            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleUserClick(post?.user?._id)}
+          >
             <Avatar className="h-10 w-10 rounded-full mr-3">
               {post?.user?.profilePicture ? (
                 <AvatarImage

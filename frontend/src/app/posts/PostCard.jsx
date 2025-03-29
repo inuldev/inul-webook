@@ -1,4 +1,5 @@
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -31,15 +32,8 @@ import {
 
 import PostComments from "./PostComments";
 
-const PostCard = ({
-  post,
-  isLiked,
-  onShare,
-  onComment,
-  onLike,
-  onDelete,
-  currentUser,
-}) => {
+const PostCard = ({ post, isLiked, onShare, onComment, onLike, onDelete }) => {
+  const router = useRouter();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const commentInputRef = useRef(null);
@@ -102,6 +96,15 @@ const PostCard = ({
     }
   };
 
+  const handleUserClick = (userId) => {
+    try {
+      router.push(`/user-profile/${userId}`);
+    } catch (error) {
+      console.error("Navigation error:", error);
+      toast.error("Failed to navigate to user profile");
+    }
+  };
+
   return (
     <motion.div
       key={post?._id}
@@ -112,7 +115,10 @@ const PostCard = ({
       <Card>
         <CardContent className="p-6 dark:text-white">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3 cursor-pointer">
+            <div
+              className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handleUserClick(post?.user?._id)}
+            >
               <Avatar>
                 {post?.user?.profilePicture ? (
                   <AvatarImage
