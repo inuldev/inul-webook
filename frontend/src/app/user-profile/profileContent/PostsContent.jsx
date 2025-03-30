@@ -147,22 +147,24 @@ const PostsContent = ({
                 </p>
               </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="dark:hover:bg-gray-500">
-                  <MoreHorizontal className="dark:text-white h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-red-600 focus:text-red-600"
-                  onClick={onDelete}
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete Post
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {onDelete && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="dark:hover:bg-gray-500">
+                    <MoreHorizontal className="dark:text-white h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onClick={onDelete}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete Post
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
           <p className="mb-4">{post?.content}</p>
           {post?.mediaUrl && post.mediaType === "image" && (
