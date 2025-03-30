@@ -15,12 +15,17 @@ export const userFriendStore = create((set, get) => ({
   friendSuggestion: [],
   mutualFriends: [],
   loading: false,
+  pendingRequestsCount: 0,
 
   fetchFriendRequest: async () => {
     set({ loading: true });
     try {
       const friend = await getAllFriendsRequest();
-      set({ friendRequest: friend.data, loading: false });
+      set({
+        friendRequest: friend.data,
+        pendingRequestsCount: friend.data.length,
+        loading: false,
+      });
     } catch (error) {
       set({ error, loading: false });
     } finally {
@@ -79,5 +84,13 @@ export const userFriendStore = create((set, get) => ({
     } catch (error) {
       set({ error, loading: false });
     }
+  },
+
+  // function to check requests periodically
+  startRequestsPolling: () => {
+    const pollInterval = setInterval(() => {
+      get().fetchFriendRequest();
+    }, 10000); // Check every 10 seconds
+    return () => clearInterval(pollInterval);
   },
 }));

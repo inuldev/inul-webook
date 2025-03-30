@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
 import { toast } from "react-hot-toast";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Home,
@@ -16,7 +16,9 @@ import {
 import userStore from "@/store/userStore";
 import { logout } from "@/service/auth.service";
 import useSidebarStore from "@/store/sidebarStore";
+import { userFriendStore } from "@/store/userFriendsStore";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +27,14 @@ const LeftSideBar = () => {
   const router = useRouter();
   const { user, clearUser } = userStore();
   const { isSidebarOpen, toggleSidebar } = useSidebarStore();
+  const { pendingRequestsCount, fetchFriendRequest, startRequestsPolling } =
+    userFriendStore();
+
+  useEffect(() => {
+    fetchFriendRequest();
+    const stopPolling = startRequestsPolling();
+    return () => stopPolling();
+  }, []);
 
   const userPlaceholder = user?.username
     ?.split(" ")
@@ -87,11 +97,19 @@ const LeftSideBar = () => {
           </Button>
           <Button
             variant="ghost"
-            className="full justify-start"
+            className="w-full justify-start relative"
             onClick={() => handleNavigation("/friends-list", "friends")}
           >
             <Users className="mr-4" />
             Friends List
+            {pendingRequestsCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute right-0 top-1/3 -translate-y-1/3 mr-12"
+              >
+                {pendingRequestsCount}
+              </Badge>
+            )}
           </Button>
           <Button
             variant="ghost"

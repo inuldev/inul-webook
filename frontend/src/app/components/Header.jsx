@@ -22,8 +22,10 @@ import Loader from "@/lib/Loader";
 import userStore from "@/store/userStore";
 import { logout } from "@/service/auth.service";
 import useSidebarStore from "@/store/sidebarStore";
-import { getAllUsers, searchUsers } from "@/service/user.service";
+import { getAllUsers } from "@/service/user.service";
+import { userFriendStore } from "@/store/userFriendsStore";
 
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,8 +43,6 @@ const Header = () => {
   const searchRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const { theme, setTheme } = useTheme();
-  const { user, clearUser } = userStore();
-  const { toggleSidebar } = useSidebarStore();
   const [userList, setUserList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,6 +50,10 @@ const Header = () => {
   const [filterUsers, setFilterUsers] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const { user, clearUser } = userStore();
+  const { toggleSidebar } = useSidebarStore();
+  const { pendingRequestsCount } = userFriendStore();
 
   const userPlaceholder = user?.username
     ?.split(" ")
