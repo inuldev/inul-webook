@@ -29,7 +29,7 @@ const HomePage = () => {
 
   useEffect(() => {
     fetchPost();
-  }, []);
+  }, [fetchPost]);
 
   useEffect(() => {
     const saveLikes = localStorage.getItem("likePosts");
@@ -39,25 +39,27 @@ const HomePage = () => {
   }, []);
 
   const handleLike = async (postId) => {
-    const updatedLikePost = new Set(likePosts);
-    if (updatedLikePost.has(postId)) {
-      updatedLikePost.delete(postId);
-      toast.error("post unliked successfully");
-    } else {
-      updatedLikePost.add(postId);
-      toast.success("post liked successfully");
-    }
-    setLikePosts(updatedLikePost);
-    localStorage.setItem(
-      "likePosts",
-      JSON.stringify(Array.from(updatedLikePost))
-    );
-
     try {
-      await handleLikePost(postId);
+      const response = await handleLikePost(postId);
+      const updatedLikePost = new Set(likePosts);
+
+      // Check the response to determine if it was a like or unlike
+      if (response.message.includes("unliked")) {
+        updatedLikePost.delete(postId);
+        toast.success("Post unliked successfully");
+      } else {
+        updatedLikePost.add(postId);
+        toast.success("Post liked successfully");
+      }
+
+      setLikePosts(updatedLikePost);
+      localStorage.setItem(
+        "likePosts",
+        JSON.stringify(Array.from(updatedLikePost))
+      );
     } catch (error) {
       console.error(error);
-      toast.error("failed to like or unlike the post");
+      toast.error("Failed to like or unlike the post");
     }
   };
 

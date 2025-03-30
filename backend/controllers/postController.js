@@ -140,27 +140,31 @@ const likePost = async (req, res) => {
   try {
     const post = await Post.findById(postId);
     if (!post) {
-      return response(res, 404, "post not found");
+      return response(res, 404, "Post not found");
     }
+
     const hasLiked = post.likes.includes(userId);
     if (hasLiked) {
       post.likes = post.likes.filter(
         (id) => id.toString() !== userId.toString()
       );
-      post.likeCount = Math.max(0, post.likeCount - 1); //ensure likecount does not go negative
+      post.likeCount = Math.max(0, post.likeCount - 1);
+
+      const updatedPost = await post.save();
+      return response(res, 200, "Post unliked successfully", {
+        post: updatedPost,
+        message: "unliked",
+      });
     } else {
       post.likes.push(userId);
       post.likeCount += 1;
-    }
 
-    //save the like in updated post
-    const updatedpost = await post.save();
-    return response(
-      res,
-      201,
-      hasLiked ? "Post unlike successfully" : "post liked successfully",
-      updatedpost
-    );
+      const updatedPost = await post.save();
+      return response(res, 200, "Post liked successfully", {
+        post: updatedPost,
+        message: "liked",
+      });
+    }
   } catch (error) {
     console.log(error);
     return response(res, 500, "Internal server error", error.message);
@@ -175,15 +179,14 @@ const addCommentToPost = async (req, res) => {
   try {
     const post = await Post.findById(postId);
     if (!post) {
-      return response(res, 404, "post not found");
+      return response(res, 404, "Post not found");
     }
 
     post.comments.push({ user: userId, text });
     post.commentCount += 1;
 
-    //save the post with new comments
     await post.save();
-    return response(res, 201, "comments added successfully", post);
+    return response(res, 201, "Comments added successfully", post);
   } catch (error) {
     console.log(error);
     return response(res, 500, "Internal server error", error.message);
@@ -197,7 +200,7 @@ const sharePost = async (req, res) => {
   try {
     const post = await Post.findById(postId);
     if (!post) {
-      return response(res, 404, "post not found");
+      return response(res, 404, "Post not found");
     }
     const hasUserShared = post.share.includes(userId);
     if (!hasUserShared) {
@@ -206,9 +209,8 @@ const sharePost = async (req, res) => {
 
     post.shareCount += 1;
 
-    //save the share in updated post
     await post.save();
-    return response(res, 201, "post share successfully", post);
+    return response(res, 201, "Post share successfully", post);
   } catch (error) {
     console.log(error);
     return response(res, 500, "Internal server error", error.message);

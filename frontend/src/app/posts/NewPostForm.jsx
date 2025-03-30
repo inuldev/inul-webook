@@ -68,9 +68,15 @@ const NewPostForm = ({ isPostFormOpen, setIsPostFormOpen }) => {
     }
 
     // Validate file type
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "video/mp4"];
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "video/mp4",
+    ];
     if (!validTypes.includes(file.type)) {
-      toast.error("Invalid file type. Please use JPG, PNG, GIF or MP4");
+      toast.error("Invalid file type. Please use JPG, PNG, WEBP, GIF or MP4");
       return;
     }
 

@@ -48,7 +48,10 @@ export const getAllStory = async () => {
 export const likePost = async (postId) => {
   try {
     const result = await axiosInstance.post(`/users/posts/likes/${postId}`);
-    return result?.data?.data;
+    return {
+      data: result?.data?.data,
+      message: result?.data?.message,
+    };
   } catch (error) {
     console.error(error);
     throw error;

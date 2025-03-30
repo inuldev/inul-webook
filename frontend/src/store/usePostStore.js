@@ -91,9 +91,11 @@ export const usePostStore = create((set) => ({
   handleLikePost: async (postId) => {
     set({ loading: true });
     try {
-      await likePost(postId);
+      const response = await likePost(postId);
       const posts = await getAllPosts(); // Fetch fresh data
       set({ posts });
+      // Return the response so we know if it was a like or unlike
+      return response;
     } catch (error) {
       set({ error, loading: false });
       throw error;
