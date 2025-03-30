@@ -243,6 +243,34 @@ const deletePost = async (req, res) => {
   }
 };
 
+const deleteStory = async (req, res) => {
+  try {
+    const { storyId } = req.params;
+    const userId = req.user.userId;
+
+    const story = await Story.findById(storyId);
+
+    if (!story) {
+      return response(res, 404, "Story not found");
+    }
+
+    // Check if the user is the owner of the story
+    if (story.user.toString() !== userId) {
+      return response(
+        res,
+        403,
+        "Unauthorized: You can only delete your own stories"
+      );
+    }
+
+    await Story.findByIdAndDelete(storyId);
+    return response(res, 200, "Story deleted successfully");
+  } catch (error) {
+    console.error("Error deleting story:", error);
+    return response(res, 500, "Internal server error", error.message);
+  }
+};
+
 module.exports = {
   createPost,
   getAllPosts,
@@ -253,4 +281,5 @@ module.exports = {
   createStory,
   getAllStory,
   deletePost,
+  deleteStory,
 };

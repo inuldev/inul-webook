@@ -101,3 +101,14 @@ export const deletePost = async (postId) => {
     throw error;
   }
 };
+
+//delete a story
+export const deleteStory = async (storyId) => {
+  try {
+    const result = await axiosInstance.delete(`/users/story/${storyId}`);
+    return result?.data?.data;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};

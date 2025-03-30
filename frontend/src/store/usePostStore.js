@@ -10,6 +10,7 @@ import {
   createStory,
   commentsPost,
   deletePost,
+  deleteStory,
 } from "@/service/post.service";
 
 export const usePostStore = create((set) => ({
@@ -142,6 +143,22 @@ export const usePostStore = create((set) => ({
       }));
       const posts = await getAllPosts(); // Fetch fresh data
       set({ posts });
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  },
+
+  //delete a story
+  handleDeleteStory: async (storyId) => {
+    try {
+      await deleteStory(storyId);
+      // Update local state immediately after successful deletion
+      set((state) => ({
+        story: state.story.filter((s) => s._id !== storyId),
+      }));
+      const story = await getAllStory(); // Fetch fresh data
+      set({ story });
     } catch (error) {
       console.error(error);
       throw error;

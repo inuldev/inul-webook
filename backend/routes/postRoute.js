@@ -13,6 +13,7 @@ const {
   getAllStory,
   createStory,
   deletePost,
+  deleteStory,
 } = require("../controllers/postController");
 
 //create post
@@ -51,5 +52,8 @@ router.get("/story", authMiddleware, getAllStory);
 
 //delete post
 router.delete("/posts/:postId", authMiddleware, deletePost);
+
+//delete story
+router.delete("/story/:storyId", authMiddleware, deleteStory);
 
 module.exports = router;

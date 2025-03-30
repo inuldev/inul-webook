@@ -1,9 +1,9 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-import React, { useRef, useState } from "react";
+import { Plus, Trash } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
 import userStore from "@/store/userStore";
 import { usePostStore } from "@/store/usePostStore";
@@ -14,9 +14,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import ShowStoryPreview from "./ShowStoryPreview";
 
-const StoryCard = ({ isAddStory, story }) => {
-  const { user } = userStore();
-  const { handleCreateStory } = usePostStore();
+const StoryCard = ({ story, isAddStory = false }) => {
+  const fileInputRef = useRef(null);
   const [fileType, setFileType] = useState("");
   const [loading, setLoading] = useState(false);
   const [isNewStory, setIsNewStory] = useState(false);
@@ -24,7 +23,9 @@ const StoryCard = ({ isAddStory, story }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const fileInputRef = useRef(null);
+  const { user } = userStore();
+  const { handleCreateStory, handleDeleteStory, fetchStoryPost } =
+    usePostStore();
 
   const userPlaceholder = user?.username
     ?.split(" ")
@@ -67,6 +68,10 @@ const StoryCard = ({ isAddStory, story }) => {
     e.target.value = "";
   };
 
+  useEffect(() => {
+    fetchStoryPost();
+  }, [fetchStoryPost]);
+
   const handleCreateStoryPost = async () => {
     if (!selectedFile) return;
 
@@ -75,6 +80,7 @@ const StoryCard = ({ isAddStory, story }) => {
       const formData = new FormData();
       formData.append("media", selectedFile);
       await handleCreateStory(formData);
+      await fetchStoryPost();
       toast.success("Story created successfully!");
       resetStoryState();
     } catch (error) {
@@ -108,6 +114,17 @@ const StoryCard = ({ isAddStory, story }) => {
     setShowPreview(true);
   };
 
+  const handleDelete = async (e) => {
+    e.stopPropagation(); // Prevent story click event
+    try {
+      await handleDeleteStory(story._id);
+      toast.success("Story deleted successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete story");
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -122,6 +139,17 @@ const StoryCard = ({ isAddStory, story }) => {
           }`}
           onClick={isAddStory ? undefined : handleStoryClick}
         >
+          {/* Add delete button if user owns the story */}
+          {!isAddStory && story?.user?._id === user?._id && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70"
+              onClick={handleDelete}
+            >
+              <Trash className="h-4 w-4 text-red-500 shadow-lg" />
+            </Button>
+          )}
           <CardContent className="p-0 h-full">
             {isAddStory ? (
               <div className="w-full h-full flex flex-col">
@@ -174,14 +202,11 @@ const StoryCard = ({ isAddStory, story }) => {
                     src={story.mediaUrl}
                     alt={story.user?.username}
                     className="w-full h-full object-cover"
-                    loading="lazy"
                   />
                 ) : (
                   <video
                     src={story.mediaUrl}
                     className="w-full h-full object-cover"
-                    muted
-                    loading="lazy"
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent" />
