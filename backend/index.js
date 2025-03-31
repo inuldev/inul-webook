@@ -24,6 +24,8 @@ app.use(cookieParser());
 const corsOptions = {
   origin: process.env.FRONTEND_URL,
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 };
 app.use(cors(corsOptions));
 
@@ -36,31 +38,25 @@ app.use("/users", postRoute);
 app.use("/users", userRoute);
 app.use(errorHandler);
 
-// Handle root route
 app.get("/", (req, res) => {
   res.json({ message: "Backend API is running" });
 });
 
-// Initialize server and start the server if not in production mode. Production mode is handled by Vercel.
+// Initialize server
 async function initializeServer() {
   try {
     await connectDb();
 
-    // Only run cleanup in development
+    // Only run cleanup and server in development
     if (process.env.NODE_ENV !== "production") {
-      // Clean up temporary files and expired stories every hour
       cron.schedule("0 * * * *", () => {
         cleanupTempFiles();
-        console.log("Temporary files cleaned up");
         StoryCleanupService.cleanupExpiredStories();
-        console.log("Expired stories cleaned up");
       });
 
-      // Initial cleanup
       cleanupTempFiles();
       StoryCleanupService.cleanupExpiredStories();
 
-      // Start server
       const PORT = process.env.PORT || 8000;
       app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
     }
@@ -70,7 +66,9 @@ async function initializeServer() {
   }
 }
 
-initializeServer();
+// Initialize if not in production
+if (process.env.NODE_ENV !== "production") {
+  initializeServer();
+}
 
-// Export app for Vercel deployment
 module.exports = app;
