@@ -41,25 +41,26 @@ app.get("/", (req, res) => {
   res.json({ message: "Backend API is running" });
 });
 
-// Initialize database, story cleanup, and temporary file cleanup
+// Initialize server and start the server if not in production mode. Production mode is handled by Vercel.
 async function initializeServer() {
   try {
     await connectDb();
 
-    // Clean up temporary files and expired stories every hour
-    cron.schedule("0 * * * *", () => {
-      cleanupTempFiles();
-      console.log("Temporary files cleaned up");
-      StoryCleanupService.cleanupExpiredStories();
-      console.log("Expired stories cleaned up");
-    });
-
-    // Initial cleanup
-    cleanupTempFiles();
-    StoryCleanupService.cleanupExpiredStories();
-
-    // Start server if not in production
+    // Only run cleanup in development
     if (process.env.NODE_ENV !== "production") {
+      // Clean up temporary files and expired stories every hour
+      cron.schedule("0 * * * *", () => {
+        cleanupTempFiles();
+        console.log("Temporary files cleaned up");
+        StoryCleanupService.cleanupExpiredStories();
+        console.log("Expired stories cleaned up");
+      });
+
+      // Initial cleanup
+      cleanupTempFiles();
+      StoryCleanupService.cleanupExpiredStories();
+
+      // Start server
       const PORT = process.env.PORT || 8000;
       app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
     }
