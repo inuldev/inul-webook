@@ -1,5 +1,6 @@
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 require("dotenv").config();
 
@@ -48,10 +49,19 @@ const uploadFileToCloudinary = (file) => {
   });
 };
 
+// Use Cloudinary storage instead of local storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "uploads",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "mp4", "mov"],
+  },
+});
+
 const multerMiddleware = multer({
-  dest: "uploads/",
+  storage: storage,
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit for videos
+    fileSize: 100 * 1024 * 1024, // 100MB limit
   },
 });
 
