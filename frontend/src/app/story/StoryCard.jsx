@@ -14,9 +14,10 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 import ShowStoryPreview from "./ShowStoryPreview";
 
-const StoryCard = ({ story, isAddStory = false }) => {
+const StoryCard = ({ story, isAddStory }) => {
   const fileInputRef = useRef(null);
   const [fileType, setFileType] = useState("");
+  const [timeLeft, setTimeLeft] = useState("");
   const [loading, setLoading] = useState(false);
   const [isNewStory, setIsNewStory] = useState(false);
   const [filePreview, setFilePreview] = useState(null);
@@ -126,6 +127,30 @@ const StoryCard = ({ story, isAddStory = false }) => {
     }
   };
 
+  useEffect(() => {
+    if (story?.remainingTime) {
+      const updateRemainingTime = () => {
+        const hours = Math.floor(story.remainingTime / 3600);
+        const minutes = Math.floor((story.remainingTime % 3600) / 60);
+
+        if (hours > 0) {
+          setTimeLeft(`${hours}h left`);
+        } else if (minutes > 0) {
+          setTimeLeft(`${minutes}m left`);
+        } else {
+          setTimeLeft("Expiring soon");
+        }
+
+        story.remainingTime -= 1;
+      };
+
+      updateRemainingTime();
+      const timer = setInterval(updateRemainingTime, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [story]);
+
   return (
     <>
       <motion.div
@@ -134,10 +159,7 @@ const StoryCard = ({ story, isAddStory = false }) => {
         transition={{ duration: 0.2 }}
       >
         <Card
-          className={`w-40 h-60 relative overflow-hidden rounded-xl ${
-            !isAddStory &&
-            "hover:ring-2 hover:ring-blue-500 transition-all duration-200"
-          }`}
+          className="w-40 h-60 relative overflow-hidden rounded-xl"
           onClick={isAddStory ? undefined : handleStoryClick}
         >
           {/* Add delete button if user owns the story */}
@@ -150,6 +172,12 @@ const StoryCard = ({ story, isAddStory = false }) => {
             >
               <Trash className="h-4 w-4 text-red-500 shadow-lg" />
             </Button>
+          )}
+          {/* Add time remaining indicator */}
+          {!isAddStory && timeLeft && (
+            <div className="absolute top-2 left-2 bg-black bg-opacity-50 px-2 py-1 rounded-full">
+              <span className="text-xs text-white">{timeLeft}</span>
+            </div>
           )}
           <CardContent className="p-0 h-full">
             {isAddStory ? (

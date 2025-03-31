@@ -1,7 +1,10 @@
 const Post = require("../model/Post");
 const Story = require("../model/Story");
 const { response } = require("../utils/responseHandler");
-const { uploadFileToCloudinary } = require("../config/cloudinary");
+const {
+  uploadFileToCloudinary,
+  deleteFileFromCloudinary,
+} = require("../config/cloudinary");
 
 const createPost = async (req, res) => {
   try {
@@ -10,12 +13,14 @@ const createPost = async (req, res) => {
     const file = req.file;
     let mediaUrl = null;
     let mediaType = null;
+    let cloudinaryPublicId = null;
 
     if (file) {
       try {
         const uploadResult = await uploadFileToCloudinary(file);
         mediaUrl = uploadResult?.secure_url;
         mediaType = file.mimetype.startsWith("video") ? "video" : "image";
+        cloudinaryPublicId = uploadResult?.public_id;
       } catch (uploadError) {
         console.log("Error uploading file:", uploadError);
         return response(res, 400, "File upload failed. " + uploadError.message);
@@ -28,6 +33,7 @@ const createPost = async (req, res) => {
       content,
       mediaUrl,
       mediaType,
+      cloudinaryPublicId,
       likeCount: 0,
       commentCount: 0,
       shareCount: 0,
@@ -52,23 +58,29 @@ const createStory = async (req, res) => {
     }
     let mediaUrl = null;
     let mediaType = null;
+    let cloudinaryPublicId = null;
 
     if (file) {
       try {
         const uploadResult = await uploadFileToCloudinary(file);
         mediaUrl = uploadResult?.secure_url;
         mediaType = file.mimetype.startsWith("video") ? "video" : "image";
+        cloudinaryPublicId = uploadResult?.public_id;
       } catch (uploadError) {
         console.log("Error uploading file:", uploadError);
         return response(res, 400, "File upload failed. " + uploadError.message);
       }
     }
 
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     //create a new story
     const newStory = await new Story({
       user: userId,
       mediaUrl,
       mediaType,
+      cloudinaryPublicId,
+      expiresAt,
     });
 
     await newStory.save();
@@ -82,11 +94,23 @@ const createStory = async (req, res) => {
 //getAllStory
 const getAllStory = async (req, res) => {
   try {
-    const story = await Story.find()
+    const stories = await Story.find({
+      expiresAt: { $gt: new Date() }, // Only get non-expired stories
+      mediaUrl: { $exists: true }, // Only get stories with mediaUrl set
+    })
       .sort({ createdAt: -1 })
       .populate("user", "_id username profilePicture email");
 
-    return response(res, 201, "Get all story successfully", story);
+    // Add remaining time for each story
+    const storiesWithTime = stories.map((story) => {
+      const remaining = story.expiresAt - new Date();
+      return {
+        ...story.toObject(),
+        remainingTime: Math.max(0, Math.floor(remaining / 1000)), // remaining time in seconds
+      };
+    });
+
+    return response(res, 200, "Get all story successfully", storiesWithTime);
   } catch (error) {
     console.log("error getting story", error);
     return response(res, 500, "Internal server error", error.message);
@@ -237,6 +261,15 @@ const deletePost = async (req, res) => {
       );
     }
 
+    // Delete media from Cloudinary if exists
+    if (post.cloudinaryPublicId) {
+      try {
+        await deleteFileFromCloudinary(post.cloudinaryPublicId, post.mediaType);
+      } catch (cloudinaryError) {
+        console.error("Error deleting media from Cloudinary:", cloudinaryError);
+      }
+    }
+
     await Post.findByIdAndDelete(postId);
     return response(res, 200, "Post deleted successfully");
   } catch (error) {
@@ -263,6 +296,18 @@ const deleteStory = async (req, res) => {
         403,
         "Unauthorized: You can only delete your own stories"
       );
+    }
+
+    // Delete media from Cloudinary if exists
+    if (story.cloudinaryPublicId) {
+      try {
+        await deleteFileFromCloudinary(
+          story.cloudinaryPublicId,
+          story.mediaType
+        );
+      } catch (cloudinaryError) {
+        console.error("Error deleting media from Cloudinary:", cloudinaryError);
+      }
     }
 
     await Story.findByIdAndDelete(storyId);

@@ -6,6 +6,7 @@ const postSchema = new mongoose.Schema(
     content: { type: String },
     mediaUrl: { type: String },
     mediaType: { type: String, enum: ["image", "video"] },
+    cloudinaryPublicId: { type: String },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     comments: [
       {

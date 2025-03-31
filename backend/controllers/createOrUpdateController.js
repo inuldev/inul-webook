@@ -1,7 +1,10 @@
 const User = require("../model/User");
 const Bio = require("../model/UserBio");
 const { response } = require("../utils/responseHandler");
-const { uploadFileToCloudinary } = require("../config/cloudinary");
+const {
+  uploadFileToCloudinary,
+  deleteFileFromCloudinary,
+} = require("../config/cloudinary");
 
 const createOrUpdateUserBio = async (req, res) => {
   try {
@@ -59,30 +62,45 @@ const updateCoverPhoto = async (req, res) => {
     const { userId } = req.params;
     const file = req.file;
     let coverPhoto = null;
+    let cloudinaryPublicId = null;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return response(res, 404, "user not found with this id");
+    }
+
+    // Delete old cover photo from Cloudinary if exists
+    if (user.coverPhoto && user.coverPhotoPublicId) {
+      try {
+        await deleteFileFromCloudinary(user.coverPhotoPublicId, "image");
+      } catch (cloudinaryError) {
+        console.error("Error deleting old cover photo:", cloudinaryError);
+      }
+    }
 
     if (file) {
       const uploadResult = await uploadFileToCloudinary(file);
       coverPhoto = uploadResult.secure_url;
+      cloudinaryPublicId = uploadResult.public_id;
     }
 
     if (!coverPhoto) {
       return response(res, 400, "failed to upload cover photo");
     }
-    //update user profile with cover photo
-    await User.updateOne(
-      { _id: userId },
+
+    // Update user profile
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
       {
         $set: {
           coverPhoto,
+          coverPhotoPublicId: cloudinaryPublicId,
         },
-      }
+      },
+      { new: true }
     );
-    const updateUser = await User.findById(userId);
 
-    if (!updateUser) {
-      return response(res, 404, "user not found with this id");
-    }
-    return response(res, 200, "Cover photo update successfully", updateUser);
+    return response(res, 200, "Cover photo update successfully", updatedUser);
   } catch (error) {
     console.log(error);
     return response(res, 500, "Internal server error", error.message);
@@ -95,32 +113,47 @@ const updateUserProfile = async (req, res) => {
     const { username, gender, dateOfBirth } = req.body;
     const file = req.file;
     let profilePicture = null;
+    let profilePicturePublicId = null;
 
-    if (file) {
-      const uploadResult = await uploadFileToCloudinary(file);
-      profilePicture = uploadResult.secure_url;
-    }
-
-    //update user profile with cover photo
-    await User.updateOne(
-      { _id: userId },
-      {
-        $set: {
-          username,
-          gender,
-          dateOfBirth,
-          ...(profilePicture && { profilePicture }),
-        },
-      }
-    );
-
-    const updateUser = await User.findById(userId);
-
-    if (!updateUser) {
+    const user = await User.findById(userId);
+    if (!user) {
       return response(res, 404, "user not found with this id");
     }
 
-    return response(res, 200, "user profile update successfully", updateUser);
+    if (file) {
+      // Delete old profile picture from Cloudinary if exists
+      if (user.profilePicture && user.profilePicturePublicId) {
+        try {
+          await deleteFileFromCloudinary(user.profilePicturePublicId, "image");
+        } catch (cloudinaryError) {
+          console.error("Error deleting old profile picture:", cloudinaryError);
+        }
+      }
+
+      const uploadResult = await uploadFileToCloudinary(file);
+      profilePicture = uploadResult.secure_url;
+      profilePicturePublicId = uploadResult.public_id;
+    }
+
+    // Create update object
+    const updateData = {
+      ...(username && { username }),
+      ...(gender && { gender }),
+      ...(dateOfBirth && { dateOfBirth }),
+      ...(profilePicture && {
+        profilePicture,
+        profilePicturePublicId,
+      }),
+    };
+
+    // Update user profile
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true }
+    );
+
+    return response(res, 200, "user profile update successfully", updatedUser);
   } catch (error) {
     console.log(error);
     return response(res, 500, "Internal server error", error.message);

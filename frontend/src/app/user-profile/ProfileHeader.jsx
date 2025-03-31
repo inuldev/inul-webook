@@ -1,5 +1,6 @@
 "use client";
 
+import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -54,22 +55,30 @@ const ProfileHeader = ({
     try {
       setLoading(true);
       const formData = new FormData();
-      formData.append("username", data.username);
-      formData.append("dateOfBirth", data.dateOfBirth);
-      formData.append("gender", data.gender);
 
-      if (profilePictureFile) {
+      // Only append fields that have values
+      if (data.username) formData.append("username", data.username);
+      if (data.dateOfBirth) formData.append("dateOfBirth", data.dateOfBirth);
+      if (data.gender) formData.append("gender", data.gender);
+      if (profilePictureFile)
         formData.append("profilePicture", profilePictureFile);
-      }
 
       const updateProfile = await updateUserProfile(id, formData);
-      setProfileData({ ...profileData, ...updateProfile });
+
+      // Update local state
+      setProfileData((prev) => ({ ...prev, ...updateProfile }));
       setIsEditProfileModel(false);
       setProfilePicturePreview(null);
+      setProfilePictureFile(null);
       setUser(updateProfile);
+
+      // Refresh profile data
       await fetchProfile();
+
+      toast.success("Profile updated successfully");
     } catch (error) {
       console.error("error updating user profile", error);
+      toast.error("Failed to update profile");
     } finally {
       setLoading(false);
     }
@@ -90,15 +99,22 @@ const ProfileHeader = ({
     try {
       setLoading(true);
       const formData = new FormData();
-      if (coverPhotoFile) {
-        formData.append("coverPhoto", coverPhotoFile);
+      if (!coverPhotoFile) {
+        toast.error("Please select a cover photo");
+        return;
       }
+
+      formData.append("coverPhoto", coverPhotoFile);
+
       const updateProfile = await updateUserCoverPhoto(id, formData);
-      setProfileData({ ...profileData, coverPhoto: updateProfile.coverPhoto });
+      setProfileData((prev) => ({ ...prev, ...updateProfile }));
       setIsEditCoverModel(false);
       setCoverPhotoFile(null);
+
+      toast.success("Cover photo updated successfully");
     } catch (error) {
       console.error("error updating user cover photo", error);
+      toast.error("Failed to update cover photo");
     } finally {
       setLoading(false);
     }
